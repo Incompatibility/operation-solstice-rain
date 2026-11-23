@@ -15,9 +15,7 @@
 		</div>
 		<div class="rhombus"></div>
 		<div class="planet-location-container">
-			<video autoplay muted loop width="90px" height="90px">
-				<source :src="`${planetPath}`" type="video/webm" />
-			</video>
+			<PlanetGlobe />
 			<div class="location-info">
 				<div id="planet-year" class="location-row">
 					<div id="year">
@@ -48,25 +46,34 @@
 	</header>
 </template>
 
+
 <script>
+import PlanetGlobe from "@/components/PlanetGlobe.vue";
+
 export default {
-	components: {},
-	props: {
-		planetPath: {
-			type: String,
-			required: true,
-		},
-		header: {
-			type: Object,
-			required: true,
-		},
-	},
-	data() {
-		return {};
-	},
-	created() {},
-	mounted() {},
+  components: {
+    PlanetGlobe
+  },
+
+  props: {
+    planetPath: {
+      type: String,
+      required: true,
+    },
+    header: {
+      type: Object,
+      required: true,
+    },
+  },
+
+  data() {
+    return {};
+  },
+
+  created() {},
+  mounted() {},
 };
 </script>
+
 
 <style lang="scss" scoped></style>
