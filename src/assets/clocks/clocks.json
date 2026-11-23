@@ -1,0 +1,11 @@
+
+[
+  {
+    "type": "Operation Progress",
+    "name": "Transit to FOB Saber",
+    "description": "Tracks the squad's progress toward reaching Forward Operating Base Saber. This is an informational GM-controlled clock with no additional mechanical consequences.",
+    "value": 1,
+    "max": 4,
+    "color": "#EA534C"
+  }
+]

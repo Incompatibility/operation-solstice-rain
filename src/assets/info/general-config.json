@@ -1,0 +1,19 @@
+{
+  "initialSlug": "001",
+  "planetPath": "/planet.webm",
+  "animate": true,
+  "defaultTitle": "UNION NAVY |",
+  "icon": "/faction-logos/union.svg",
+  "header": {
+    "planet": "Cressidium",
+    "year": "5016u",
+    "system": "Cressidium",
+    "gate": "Not specified",
+    "ring": "Not specified",
+    "headerTitle": "UNION NAVY",
+    "headerSubtitle": "UNS-CV RIO GRANDE",
+    "subheaderTitle": "Operation Solstice Rain",
+    "subheaderSubtitle": "MISSION 01 // THE DROP"
+  },
+  "pilotSpecialInfo": {}
+}
