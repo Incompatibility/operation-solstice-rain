@@ -1,5 +1,6 @@
 import { createMemoryHistory, createWebHistory, createRouter } from "vue-router";
 
+import Persons from "@/views/PersonsView.vue";
 import Status from "@/views/StatusView.vue";
 import Pilots from "@/views/PilotsView.vue";
 import Events from "@/views/EventsView.vue";
@@ -31,6 +32,14 @@ const routes = [
 		component: Events,
 		props: true,
 		meta: { title: `${DEFAULT_TITLE} EVENTS LOG` },
+	},
+	{
+	path: "/persons",
+	name: "Persons of Interest",
+	component: Persons,
+	meta: {
+		title: `${DEFAULT_TITLE} PERSONS OF INTEREST`
+	}
 	},
 ];
 

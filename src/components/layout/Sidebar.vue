@@ -21,6 +21,10 @@
 					<img src="/icons/events.svg" />
 					<span>Logs</span>
 				</router-link>
+				<router-link class="clipped-bottom-right" to="/persons">
+				<img src="/icons/npc.svg" />
+				<span>POIs</span>
+				</router-link>
 			</o-sidebar>
 		</section>
 	</div>

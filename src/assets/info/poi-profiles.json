@@ -1,0 +1,99 @@
+
+[
+  {
+    "id": "brigid-farris",
+    "name": "Brigid Farris",
+    "title": "Captain",
+    "pronouns": "She/Her",
+    "affiliation": "Union Navy",
+    "assignment": "Rio Grande",
+    "role": "Commanding Officer",
+    "portrait": "/pois/brigid-farris.png",
+    "summary": "Veteran naval commander with twenty subjective years of service. Known for her composure, sound judgment, and approachable leadership.",
+    "details": [
+      "SERVICE RECORD — Captain Farris has commanded the Rio Grande for ten subjective years, following her promotion from Executive Officer aboard the cruiser Reykjavík. Her service includes anti-piracy operations against the Dead Suns clan and participation in the liberation of Corazón.",
+
+      "COMMAND PROFILE — A confident, level-headed officer who values initiative and sound judgment over rigid formalities. Farris maintains an approachable relationship with her crew, often sharing stories of her family's bakery and participating in shipboard baking competitions during shore leave.",
+
+      "CURRENT ASSIGNMENT — Cressidium represents Farris's first recontact operation. She favors a peaceful resolution but maintains regular combat readiness exercises despite the relatively low naval threat.",
+
+      "PILOT ADVISORY — Expect considerable operational freedom, provided you communicate clearly and exercise good judgment. Farris values competence and dislikes unnecessary risks or escalation."
+    ]
+  },
+  {
+    "id": "alex-kim",
+    "name": "Alex Kim",
+    "title": "1st Lieutenant",
+    "pronouns": "He/Him",
+    "affiliation": "Union Navy",
+    "assignment": "Rio Grande",
+    "role": "Executive Officer",
+    "portrait": "/pois/alex-kim.png",
+    "summary": "Recently promoted Executive Officer. Meticulous, ambitious, and highly capable, though sometimes overzealous about regulations and discipline.",
+    "details": [
+      "SERVICE PROFILE — Though relatively inexperienced compared to Captain Farris, Kim earned his position through demonstrated competence and tactical aptitude. He is eager to prove himself worthy of the promotion.",
+
+      "PERSONAL ASSESSMENT — Serious and detail-oriented, Kim struggles with casual socializing and has a habit of delivering lengthy lectures on regulations. An enthusiastic strategist, he remains the ship's undefeated champion of the Sparri card game Kappkat.",
+
+      "PILOT ADVISORY — Expect strict attention to procedure, readiness reports, and chain of command. Kim respects preparation and competence but has little patience for improvisation without justification."
+    ]
+  },
+  {
+    "id": "rio",
+    "name": "Rio",
+    "title": "Shipboard NHP",
+    "pronouns": "She/Her",
+    "affiliation": "Union Navy",
+    "assignment": "Rio Grande",
+    "role": "THALASSA-Class Naval NHP",
+    "portrait": "/pois/rio.png",
+    "summary": "The Rio Grande's cheerful THALASSA-class NHP, responsible for tactical coordination, electronic warfare support, and automated shipboard systems.",
+    "details": [
+      "OPERATIONAL PROFILE — Rio manages the ship's point defenses, electronic countermeasures, and robotic subalterns while providing battlefield coordination for fighter and chassis wings. She also advises Captain Farris during engagements.",
+
+      "PERSONAL ASSESSMENT — Outgoing and sociable, Rio enjoys spending downtime with the crew, particularly watching omninet dramas. She generally avoids competitive games, though First Lieutenant Kim is among the few crewmembers she enjoys playing chess with.",
+
+      "COMBAT TEMPERAMENT — During engagements, Rio's cheerful personality gives way to an intensely focused demeanor the crew calls her 'game face.'",
+
+      "PILOT ADVISORY — Rio is your primary source of tactical coordination and battlefield updates. Treat her as a fellow officer and individual, not simply another shipboard computer."
+    ]
+  },
+  {
+    "id": "omari-garcia",
+    "name": "Omari Garcia",
+    "title": "Staff Sergeant",
+    "pronouns": "He/Him",
+    "affiliation": "Union Marines",
+    "assignment": "Rio Grande",
+    "role": "Marine Noncommissioned Officer",
+    "portrait": "/pois/omari-garcia.png",
+    "summary": "Decorated combat veteran, fiercely loyal marine, and outspoken participant in the traditional rivalry between infantry and mech pilots.",
+    "details": [
+      "SERVICE RECORD — Garcia received the Marine Distinguished Service Medal for his actions during the Pellaran Dispute. A hardened veteran with numerous combat injuries, he has earned a reputation for being first into danger and last to withdraw.",
+
+      "PERSONAL ASSESSMENT — Tough, stubborn, and fearless, Garcia enjoys teasing naval personnel, especially mech pilots and their 'fancy suits.' Despite his rough demeanor, he is fiercely protective of his shipmates. Outside combat, he enjoys fishing and collecting antique firearms.",
+
+      "PILOT ADVISORY — Expect jokes at your expense, but don't mistake them for hostility. Garcia respects courage, competence, and loyalty. His extensive ground-combat experience makes him a valuable ally during joint operations."
+    ]
+  },
+  {
+    "id": "nilan-bannerjee",
+    "name": "Nilan Bannerjee",
+    "title": "Union Ambassador",
+    "pronouns": "They/Them",
+    "affiliation": "Union Administrative Department",
+    "assignment": "Cressidium Recontact Mission",
+    "role": "Diplomatic Representative",
+    "portrait": "/pois/nilan-bannerjee.png",
+    "summary": "Experienced Union diplomat tasked with negotiating Cressidium's potential reintegration into Union space and preventing further political conflict.",
+    "details": [
+      "DIPLOMATIC PROFILE — Bannerjee has spent their career conducting negotiations across numerous Diasporan worlds, including previous recontact operations. Their current objective is to facilitate an accord between Cressidium's LSA and Sovereignty factions, potentially opening the way for Union membership.",
+
+      "PERSONAL ASSESSMENT — Charming, composed, and exceptionally multilingual, Bannerjee possesses a dry sense of humor and extensive knowledge of wines and liquors. Their diplomatic composure rarely breaks, though subtle expressions can reveal irritation during difficult negotiations.",
+
+      "CURRENT ASSIGNMENT — Bannerjee operates from a separate diplomatic vessel with their own staff, periodically visiting the Rio Grande for consultations. A successful agreement on Cressidium would represent a major diplomatic achievement.",
+
+      "PILOT ADVISORY — Military actions may have consequences far beyond the battlefield. Avoid unnecessary escalation, respect diplomatic priorities, and remember that your conduct can directly affect the negotiations."
+    ]
+  }
+]
