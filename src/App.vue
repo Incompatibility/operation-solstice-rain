@@ -27,6 +27,8 @@
 import Header from "./components/layout/Header.vue";
 import Sidebar from "./components/layout/Sidebar.vue";
 import Config from "@/assets/info/general-config.json";
+import { playMenuClick } from "@/utils/uiSounds.js";
+
 
 export default {
 	components: {
@@ -57,10 +59,52 @@ export default {
 		this.importReserves(import.meta.glob("@/assets/reserves/*.json"));
 		this.importPilots(import.meta.glob("@/assets/pilots/*.json"));
 	},
+
 	mounted() {
-		this.$router.push("/status");
+	this.$router.push("/status");
+
+	document.addEventListener(
+		"click",
+		this.handleMenuClick
+	);
 	},
+
+	beforeUnmount() {
+	document.removeEventListener(
+		"click",
+		this.handleMenuClick
+	);
+	},
+
 	methods: {
+		handleMenuClick(event) {
+		const target = event.target;
+
+		if (!(target instanceof Element)) return;
+
+		const interactive = target.closest(`
+			button,
+			a,
+			[role="button"],
+			.mission,
+			.clock-container,
+			.poi-entry
+		`);
+
+		if (!interactive) return;
+
+		// Ignore disabled controls.
+		if (
+			interactive.matches(
+			':disabled, [aria-disabled="true"]'
+			)
+		) {
+			return;
+		}
+
+		playMenuClick();
+		},
+
 		setTitleFavicon(title, favicon) {
 			document.title = title;
 			let headEl = document.querySelector('head');

@@ -1,0 +1,18 @@
+[
+  {
+    "id": "nov-elysia",
+    "name": "Nov Elysia",
+    "type": "City / Area of Operations",
+    "latitude": -13,
+    "longitude": -125,
+    "description": "Primary urban area of operations for Operation Solstice Rain."
+  },
+  {
+    "id": "fob-saber",
+    "name": "FOB Saber",
+    "type": "Union Forward Operating Base",
+    "latitude": -16.18,
+    "longitude": -124.98,
+    "description": "Union rally point and operational staging facility in the Nov Elysia area."
+  }
+]

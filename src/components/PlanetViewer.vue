@@ -58,7 +58,59 @@
 
             <hr />
 
+            <h2>LOCATION REGISTRY</h2>
+
+            <div class="location-list">
+              <button
+                v-for="location in locations"
+                :key="location.id"
+                type="button"
+                class="location-button"
+                :class="{
+                  active: selectedLocation?.id === location.id
+                }"
+                @click="selectLocation(location)"
+              >
+                <span class="location-indicator">◆</span>
+                {{ location.name }}
+              </button>
+            </div>
+
+            <div v-if="selectedLocation" class="location-detail">
+              <p class="data-label">
+                SELECTED LOCATION
+              </p>
+
+              <h3>{{ selectedLocation.name }}</h3>
+
+              <p class="location-type">
+                {{ selectedLocation.type }}
+              </p>
+
+              <p>
+                {{ selectedLocation.description }}
+              </p>
+
+              <p class="location-coordinates">
+                LAT {{ selectedLocation.latitude }}°
+                /
+                LONG {{ selectedLocation.longitude }}°
+              </p>
+            </div>
+
+
+            <hr />
+
             <h2>VIEW CONTROLS</h2>
+            <button
+              type="button"
+              class="rotation-toggle"
+              @click="rotationPaused = !rotationPaused"
+            >
+              {{ rotationPaused ? "▶ RESUME" : "Ⅱ PAUSE" }}
+              <span class="hotkey">[SPACE]</span>
+            </button>
+
             <p>DRAG — ROTATE</p>
             <p>SCROLL — ZOOM</p>
             <p>ESC — CLOSE VIEWER</p>
@@ -79,6 +131,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createAtmosphere } from "@/utils/createAtmosphere.js";
 import { createCloudLayer } from "@/utils/createCloudLayer.js";
+import locations from "@/assets/info/planet-locations.json";
 
 const emit = defineEmits(["close"]);
 
@@ -86,6 +139,17 @@ const canvasHost = ref(null);
 const closeButton = ref(null);
 const loading = ref(true);
 const error = ref("");
+const rotationPaused = ref(false);
+const selectedLocation = ref(locations[0] ?? null);
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+const markerMeshes = [];
+
+let markerGroup;
+let pointerDown = null;
+
 
 let renderer;
 let scene;
@@ -138,15 +202,20 @@ function animate(time) {
   lastFrame = time;
 
   // One full revolution every 60 seconds.
-  if (planet && !window.matchMedia(
-    "(prefers-reduced-motion: reduce)"
-  ).matches) {
+  if (
+    planet &&
+    !rotationPaused.value &&
+    !window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches
+  ) {
     planet.rotation.y += delta * Math.PI * 2 / 60;
-    
-  cloudLayer.rotation.y +=
-    delta * Math.PI * 2 / 48;
 
+    if (cloudLayer) {
+      cloudLayer.rotation.y += delta * Math.PI * 2 / 48;
+    }
   }
+
 
   controls?.update();
   renderer?.render(scene, camera);
@@ -155,8 +224,209 @@ function animate(time) {
 function handleKeydown(event) {
   if (event.key === "Escape") {
     emit("close");
+    return;
+  }
+
+  if (
+    event.code === "Space" &&
+    !event.repeat &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    !event.metaKey
+  ) {
+    const target = event.target;
+
+    // Don't intercept typing in form fields.
+    if (
+      target instanceof HTMLElement &&
+      (
+        target.isContentEditable ||
+        ["INPUT", "TEXTAREA", "SELECT"].includes(
+          target.tagName
+        )
+      )
+    ) {
+      return;
+    }
+
+    // Prevent scrolling the page.
+    event.preventDefault();
+
+    rotationPaused.value = !rotationPaused.value;
   }
 }
+
+
+function latLonToPoint(latitude, longitude, radius = 1.055) {
+  // Match Three.js SphereGeometry's UV orientation.
+  const phi = THREE.MathUtils.degToRad(longitude + 180);
+  const theta = THREE.MathUtils.degToRad(90 - latitude);
+
+  return new THREE.Vector3(
+    -radius * Math.cos(phi) * Math.sin(theta),
+    radius * Math.cos(theta),
+    radius * Math.sin(phi) * Math.sin(theta)
+  );
+}
+
+function selectLocation(location) {
+  selectedLocation.value = location;
+
+  // Highlight the selected marker.
+  for (const mesh of markerMeshes) {
+    if (!mesh.userData.isMarkerDot) continue;
+
+    const selected =
+      mesh.userData.locationId === location.id;
+
+    mesh.material.color.set(
+      selected ? 0xffffff : 0xea534c
+    );
+  }
+}
+
+function createMarkers() {
+  markerGroup = new THREE.Group();
+
+  // Attach markers directly to the planet.
+  // They now follow its rotation automatically.
+  planet.add(markerGroup);
+
+  for (const location of locations) {
+    const position = latLonToPoint(
+      location.latitude,
+      location.longitude
+    );
+
+    // Bright, clickable marker.
+    const dot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.036, 16, 12),
+      new THREE.MeshBasicMaterial({
+        color: 0xea534c,
+        depthTest: true
+      })
+    );
+
+    dot.position.copy(position);
+    dot.userData.locationId = location.id;
+    dot.userData.isMarkerDot = true;
+
+    markerGroup.add(dot);
+    markerMeshes.push(dot);
+
+    // Red targeting ring around the marker.
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.054, 0.075, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0xea534c,
+        transparent: true,
+        opacity: 0.85,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+
+    const normal = position.clone().normalize();
+
+    ring.position.copy(
+      normal.clone().multiplyScalar(1.045)
+    );
+
+    ring.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 0, 1),
+      normal
+    );
+
+    ring.userData.locationId = location.id;
+
+    markerGroup.add(ring);
+    markerMeshes.push(ring);
+  }
+
+  if (selectedLocation.value) {
+    selectLocation(selectedLocation.value);
+  }
+}
+
+
+function onGlobePointerDown(event) {
+  pointerDown = {
+    x: event.clientX,
+    y: event.clientY
+  };
+}
+
+function onGlobePointerUp(event) {
+  if (!pointerDown || !renderer || !planet) return;
+
+  const distanceMoved = Math.hypot(
+    event.clientX - pointerDown.x,
+    event.clientY - pointerDown.y
+  );
+
+  pointerDown = null;
+
+  // Ignore drag gestures used to rotate the camera.
+  if (distanceMoved > 6) return;
+
+  const rect = renderer.domElement.getBoundingClientRect();
+
+  pointer.x =
+    ((event.clientX - rect.left) / rect.width) * 2 - 1;
+
+  pointer.y =
+    -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+  raycaster.setFromCamera(pointer, camera);
+
+  planet.updateWorldMatrix(true, true);
+
+  // First test the planet itself for occlusion.
+  const surfaceHit = raycaster.intersectObject(
+    planet,
+    false
+  )[0];
+
+  // SHIFT + click: identify a position on the map.
+  if (event.shiftKey && surfaceHit?.uv) {
+    const latitude = (
+      surfaceHit.uv.y * 180 - 90
+    ).toFixed(2);
+
+    const longitude = (
+      surfaceHit.uv.x * 360 - 180
+    ).toFixed(2);
+
+    console.log("CRESSIDIUM LOCATION:", {
+      latitude: Number(latitude),
+      longitude: Number(longitude)
+    });
+
+    return;
+  }
+
+  const hits = raycaster.intersectObjects(
+    markerMeshes,
+    false
+  );
+
+  // Do not select markers behind the planet.
+  const visibleHit = hits.find(
+    hit => !surfaceHit || hit.distance < surfaceHit.distance
+  );
+
+  if (!visibleHit) return;
+
+  const location = locations.find(
+    item =>
+      item.id === visibleHit.object.userData.locationId
+  );
+
+  if (location) {
+    selectLocation(location);
+  }
+}
+
 
 onMounted(() => {
   window.addEventListener("keydown", handleKeydown);
@@ -222,6 +492,8 @@ onMounted(() => {
     planet.rotation.z = 0.08;
 
     scene.add(planet);
+    createMarkers();
+
 
     cloudLayer = createCloudLayer();
     cloudLayer.rotation.copy(planet.rotation);
@@ -261,6 +533,17 @@ onMounted(() => {
     observer = new ResizeObserver(resize);
     observer.observe(canvasHost.value);
 
+    renderer.domElement.addEventListener(
+      "pointerdown",
+      onGlobePointerDown
+    );
+
+    renderer.domElement.addEventListener(
+      "pointerup",
+      onGlobePointerUp
+    );
+
+
     resize();
 
     animationFrame = requestAnimationFrame(animate);
@@ -280,6 +563,27 @@ onBeforeUnmount(() => {
   observer?.disconnect();
 
   controls?.dispose();
+  
+  if (renderer) {
+    renderer.domElement.removeEventListener(
+      "pointerdown",
+      onGlobePointerDown
+    );
+
+    renderer.domElement.removeEventListener(
+      "pointerup",
+      onGlobePointerUp
+    );
+  }
+
+  markerGroup?.traverse(object => {
+    if (object.isMesh) {
+      object.geometry?.dispose();
+      object.material?.dispose();
+    }
+  });
+
+  markerGroup?.removeFromParent();
 
   atmosphere?.geometry.dispose();
   atmosphere?.material.dispose();
@@ -450,4 +754,114 @@ onBeforeUnmount(() => {
     border-top: 1px solid var(--primary-color, #ea534c);
   }
 }
+
+/* UNION NAVY PLANETARY LOCATION REGISTRY */
+
+.location-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.location-button {
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+
+  background: #252b2c;
+  color: #ddd;
+
+  border: 1px solid #454545;
+
+  font-family: "Roboto", sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.location-button:hover {
+  border-color: #ea534c;
+}
+
+.location-button.active {
+  background: #422828;
+  border-color: #ea534c;
+  color: white;
+}
+
+.location-button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.location-indicator {
+  color: #ea534c;
+  margin-right: 8px;
+}
+
+.location-detail {
+  border-top: 1px solid #ea534c;
+  padding-top: 12px;
+  line-height: 1.6;
+}
+
+.location-detail h3 {
+  font-family: "Big Shoulders Display", sans-serif;
+  font-size: 26px;
+  color: white;
+  margin: 8px 0;
+  text-transform: uppercase;
+}
+
+.location-type {
+  color: #ea534c;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.location-coordinates {
+  font-family: monospace;
+  color: #aaa;
+  font-size: 11px;
+  margin-top: 15px;
+}
+
+
+.rotation-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  margin: 12px 0 20px;
+
+  background: #252b2c;
+  border: 1px solid var(--primary-color, #ea534c);
+  color: white;
+
+  font-family: "Roboto", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rotation-toggle:hover {
+  background: #422828;
+}
+
+.rotation-toggle:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.hotkey {
+  color: var(--primary-color, #ea534c);
+  white-space: nowrap;
+}
+
 </style>
