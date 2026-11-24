@@ -24,24 +24,37 @@
           </button>
         </div>
 
-        <div class="viewer-layout">
-          <div class="globe-stage">
-            <div ref="canvasHost" class="globe-canvas"></div>
+<div class="viewer-layout">
+  <div class="viewer-main">
+    <div class="globe-stage">
+      <div ref="canvasHost" class="globe-canvas"></div>
 
-            <div class="stage-label">
-              PLANETARY RECONNAISSANCE FEED
-            </div>
+      <div class="stage-label">
+        PLANETARY RECONNAISSANCE FEED
+      </div>
 
-            <div v-if="loading && !error" class="loading">
-              LOADING PLANETARY DATA...
-            </div>
+      <div v-if="loading && !error" class="loading">
+        LOADING PLANETARY DATA...
+      </div>
 
-            <div v-if="error" class="loading">
-              {{ error }}
-            </div>
-          </div>
+      <div v-if="error" class="loading">
+        {{ error }}
+      </div>
+    </div>
 
-          <aside class="orbital-data">
+
+    <section class="briefing-panel">
+      <div class="briefing-content">
+        <VueMarkdownIt
+          :source="cressidiumBriefing"
+          class="planet-markdown"
+        />
+      </div>
+    </section>
+
+  </div>
+
+  <aside class="orbital-data">
             <h2>PLANETARY DATA</h2>
 
             <p class="data-label">DESIGNATION</p>
@@ -132,6 +145,9 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createAtmosphere } from "@/utils/createAtmosphere.js";
 import { createCloudLayer } from "@/utils/createCloudLayer.js";
 import locations from "@/assets/info/planet-locations.json";
+import { VueMarkdownIt } from "@f3ve/vue-markdown-it";
+import cressidiumBriefing from "@/assets/planet-briefings/cressidium.md?raw";
+
 
 const emit = defineEmits(["close"]);
 
@@ -863,5 +879,96 @@ onBeforeUnmount(() => {
   color: var(--primary-color, #ea534c);
   white-space: nowrap;
 }
+
+.viewer-main {
+  display: grid;
+  grid-template-rows: minmax(320px, 65vh) minmax(220px, 1fr);
+  min-height: 0;
+}
+
+.briefing-panel {
+  background: #151b1f;
+  border-top: 1px solid var(--primary-color, #ea534c);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.briefing-content {
+  padding: 22px 26px 28px;
+  color: rgba(255, 255, 255, 0.87);
+  font-family: "Roboto", sans-serif;
+  line-height: 1.65;
+}
+
+
+/* PLANETARY INTELLIGENCE MARKDOWN */
+
+.planet-markdown {
+  color: #ddd;
+  line-height: 1.65;
+}
+
+.planet-markdown :deep(h1) {
+  margin: 0 0 8px;
+  font-family: "Big Shoulders Display", sans-serif;
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #fff;
+}
+
+.planet-markdown :deep(h2) {
+  margin: 28px 0 12px;
+  font-family: "Big Shoulders Display", sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--primary-color, #ea534c);
+}
+
+.planet-markdown :deep(p) {
+  margin: 0 0 14px;
+  font-size: 14px;
+}
+
+.planet-markdown :deep(h1 + p) {
+  color: var(--primary-color, #ea534c);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.planet-markdown :deep(strong) {
+  color: #fff;
+  font-weight: 700;
+}
+
+.planet-markdown :deep(ul) {
+  list-style: square;
+  padding-left: 24px;
+  margin: 12px 0 20px;
+}
+
+.planet-markdown :deep(li) {
+  margin-bottom: 7px;
+  font-size: 14px;
+}
+
+.planet-markdown :deep(li::marker) {
+  color: var(--primary-color, #ea534c);
+}
+
+.planet-markdown :deep(a) {
+  color: var(--primary-color, #ea534c);
+}
+
+.planet-markdown :deep(blockquote) {
+  margin: 18px 0;
+  padding: 12px 16px;
+  border-left: 3px solid var(--primary-color, #ea534c);
+  background: rgba(234, 83, 76, 0.08);
+}
+
 
 </style>
