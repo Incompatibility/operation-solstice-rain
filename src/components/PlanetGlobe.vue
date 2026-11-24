@@ -16,6 +16,8 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import * as THREE from "three";
+import { createAtmosphere } from "@/utils/createAtmosphere.js";
+import { createCloudLayer } from "@/utils/createCloudLayer.js";
 
 const container = ref(null);
 const failed = ref(false);
@@ -25,6 +27,8 @@ let geometry;
 let material;
 let texture;
 let sphere;
+let atmosphere;
+let cloudLayer;
 let scene;
 let camera;
 let animationFrame;
@@ -83,6 +87,12 @@ onMounted(() => {
     sphere.rotation.y = 0.7;
     sphere.rotation.z = 0.08;
     scene.add(sphere);
+    cloudLayer = createCloudLayer();
+    cloudLayer.rotation.copy(sphere.rotation);
+    scene.add(cloudLayer);
+    atmosphere = createAtmosphere(1.10);
+    scene.add(atmosphere);
+
 
     // Sunlight
     const sunlight = new THREE.DirectionalLight(
@@ -121,6 +131,9 @@ onMounted(() => {
       if (!reduceMotion) {
         sphere.rotation.y +=
           (delta / 30000) * Math.PI * 2;
+        cloudLayer.rotation.y +=
+            (delta / 24000) * Math.PI * 2;
+
       }
 
       renderer.render(scene, camera);
@@ -137,10 +150,16 @@ onMounted(() => {
 // Release GPU resources when component is removed
 onBeforeUnmount(() => {
   cancelAnimationFrame(animationFrame);
-
+  atmosphere?.geometry.dispose();
+  atmosphere?.material.dispose();  
   geometry?.dispose();
   material?.dispose();
   texture?.dispose();
+
+cloudLayer?.geometry.dispose();
+cloudLayer?.material.dispose();
+cloudLayer?.userData.cloudTexture?.dispose();
+
 
   if (renderer) {
     renderer.dispose();

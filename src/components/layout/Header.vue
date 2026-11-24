@@ -15,7 +15,15 @@
 		</div>
 		<div class="rhombus"></div>
 		<div class="planet-location-container">
+			<button
+			type="button"
+			class="planet-launch"
+			title="Inspect Cressidium"
+			aria-label="Open Cressidium planetary viewer"
+			@click="viewerOpen = true"
+			>
 			<PlanetGlobe />
+			</button>
 			<div class="location-info">
 				<div id="planet-year" class="location-row">
 					<div id="year">
@@ -43,37 +51,69 @@
 				</div>
 			</div>
 		</div>
+
+		<PlanetViewer
+		v-if="viewerOpen"
+		@close="viewerOpen = false"
+		/>
+
 	</header>
 </template>
 
 
+
 <script>
 import PlanetGlobe from "@/components/PlanetGlobe.vue";
+import PlanetViewer from "@/components/PlanetViewer.vue";
 
 export default {
   components: {
-    PlanetGlobe
+    PlanetGlobe,
+    PlanetViewer
   },
 
   props: {
     planetPath: {
       type: String,
-      required: true,
+      required: true
     },
     header: {
       type: Object,
-      required: true,
-    },
+      required: true
+    }
   },
 
   data() {
-    return {};
-  },
-
-  created() {},
-  mounted() {},
+    return {
+      viewerOpen: false
+    };
+  }
 };
 </script>
 
 
-<style lang="scss" scoped></style>
+
+
+<style scoped>
+.planet-launch {
+  display: block;
+  width: 90px;
+  height: 90px;
+  flex-shrink: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  cursor: zoom-in;
+}
+
+.planet-launch:hover {
+  filter: brightness(1.15);
+}
+
+.planet-launch:focus-visible {
+  outline: 2px solid var(--primary-color, #ea534c);
+  outline-offset: 3px;
+}
+</style>
+
