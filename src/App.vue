@@ -1,12 +1,19 @@
 <template>
 	<div class="page-wrapper">
-		<Header :planet-path="planetPath" :class="{ animate: animate }" :header="header" />
+		<Header :planet-path="planetPath" :class="{ animate: animate }" :header="header"
+			:planet-briefing="planetBriefing" :editable="canEditBriefings" :artwork="artwork"
+			@edit-planet="openEditor('planet', { content: planetBriefing })" />
 		<Sidebar :animate="animate" :class="{ animate: animate }" />
 	</div>
 	<div id="router-view-container">
 		<router-view :animate="animate" :initial-slug="initialSlug" :missions="missions" :events="events"
-			:pilots="pilots" :clocks="clocks" :reserves="reserves" />
+			:pilots="pilots" :clocks="clocks" :reserves="reserves" :editable="canEditBriefings" :artwork="artwork"
+			:header="header" :pilot-sync="pilotSync"
+			@edit-content="openEditor" @remove-pilot="openPilotRemoval" />
 	</div>
+	<BriefingEditor v-if="editor" :collection="editor.collection" :entry="editor.entry"
+		:missions="missions" :save-entry="saveBriefingEntry" :delete-entry="deleteBriefingEntry"
+		@close="editor = null" />
 	<svg style="visibility: hidden; position: absolute" width="0" height="0" xmlns="http://www.w3.org/2000/svg"
 		version="1.1">
 		<defs>
@@ -26,14 +33,22 @@
 <script>
 import Header from "./components/layout/Header.vue";
 import Sidebar from "./components/layout/Sidebar.vue";
+import BriefingEditor from "./components/BriefingEditor.vue";
 import Config from "@/assets/info/general-config.json";
+import cressidiumBriefing from "@/assets/planet-briefings/cressidium.md?raw";
 import { playMenuClick } from "@/utils/uiSounds.js";
+import { publicAssetUrl } from "@/utils/publicAssetUrl.js";
+import { mergeEntries } from "@/utils/briefingContent.js";
 
 
 export default {
 	components: {
 		Header,
 		Sidebar,
+		BriefingEditor,
+	},
+	props: {
+		briefingStore: { type: Object, default: null },
 	},
 
 	data() {
@@ -41,28 +56,93 @@ export default {
 			animate: Config.animate,
 			initialSlug: Config.initialSlug,
 			planetPath: Config.planetPath,
-			header: Config.header,
-			pilotSpecialInfo: Config.pilotSpecialInfo,
-			clocks: [],
-			events: [],
-			missions: [],
-			pilots: [],
-			reserves: [],
-			bonds: [],
+			defaultClocks: [],
+			defaultEvents: [],
+			defaultMissions: [],
+			edits: this.briefingStore?.read() ?? { missions: [], events: [] },
+			artworkBusy: false,
+			artworkError: null,
+			editor: null,
+			bundledPilots: [],
+			defaultReserves: [],
 		};
+	},
+	computed: {
+		canEditBriefings() {
+			return typeof this.briefingStore?.save === "function";
+		},
+		header() {
+			return { ...Config.header, ...this.edits.header };
+		},
+		pilotSync() {
+			if (typeof this.briefingStore?.listPilots !== "function") return null;
+			return { list: this.listFoundryPilots, open: this.briefingStore.openPilotSheet,
+				publish: this.publishPilot, linked: (this.edits.pilotRoster ?? []).map(link => link.actorId) };
+		},
+		pilots() {
+			const links = this.edits.pilotRoster ?? [];
+			const linked = links.map(({ pilot }) => ({
+				...pilot,
+				portraitUrl: pilot.portrait && this.briefingStore.imageUrl(pilot.portrait),
+				mechs: pilot.mechs.map(mech => ({ ...mech, portraitUrl: mech.portrait && this.briefingStore.imageUrl(mech.portrait) })),
+			}));
+			const replaced = new Set([...links.map(link => link.replaces), ...(this.edits.removedBundledPilots ?? [])]);
+			return [...this.bundledPilots.filter(pilot => !replaced.has(pilot.callsign.toUpperCase())), ...linked];
+		},
+		clocks() {
+			const pilotClocks = this.pilots.flatMap(pilot => (pilot.clocks ?? []).map((clock, index) => ({
+				id: `pilot-${pilot.id}-${clock.id || index}`, type: `Pilot Project // ${pilot.callsign}`,
+				name: clock.title, description: clock.description, value: clock.progress, max: clock.segments, color: "#3CB043",
+			})));
+			return mergeEntries([...this.defaultClocks, ...pilotClocks], this.edits.clocks ?? [], "id");
+		},
+		reserves() {
+			const pilotReserves = this.pilots.flatMap(pilot => (pilot.reserves ?? []).map((reserve, index) => ({
+				...reserve, id: `pilot-${pilot.id}-${reserve.id || index}`, callsign: pilot.callsign.toUpperCase(),
+			})));
+			return mergeEntries([...this.defaultReserves, ...pilotReserves], this.edits.reserves ?? [], "id");
+		},
+		missions() {
+			return mergeEntries(this.defaultMissions, this.edits.missions, "slug")
+				.filter(entry => this.canEditBriefings || !entry.hidden)
+				.sort((a, b) => Number(b.slug) - Number(a.slug));
+		},
+		events() {
+			return mergeEntries(this.defaultEvents, this.edits.events, "id")
+				.filter(entry => this.canEditBriefings || !entry.hidden);
+		},
+		planetBriefing() {
+			return this.edits.planetBriefing ?? cressidiumBriefing;
+		},
+		artwork() {
+			const planetPath = this.edits.planetTexture;
+			const portraits = Object.entries(this.edits.poiPortraits ?? {});
+			return {
+				editable: typeof this.briefingStore?.pickImage === "function",
+				busy: this.artworkBusy,
+				error: this.artworkError,
+				customPlanetTexture: Boolean(planetPath),
+				planetTexture: planetPath ? this.briefingStore.imageUrl(planetPath) : publicAssetUrl("/planets/cressidium.png"),
+				portraits: Object.fromEntries(portraits.map(([id, path]) => [id, this.briefingStore.imageUrl(path)])),
+				change: this.changeArtwork,
+			};
+		},
 	},
 	created() {
 		this.setTitleFavicon(Config.defaultTitle + " MISSION BRIEFING", Config.icon);
-		this.importMissions(import.meta.glob("@/assets/missions/*.md", { query: '?raw', import: 'default' }));
-		this.importEvents(import.meta.glob("@/assets/events/*.md", { query: '?raw', import: 'default' }));
-		this.importClocks(import.meta.glob("@/assets/clocks/*.json"));
-		this.importReserves(import.meta.glob("@/assets/reserves/*.json"));
-		this.importPilots(import.meta.glob("@/assets/pilots/*.json"));
+		this.importMissions(import.meta.glob("@/assets/missions/*.md", { query: '?raw', import: 'default', eager: true }));
+		this.importEvents(import.meta.glob("@/assets/events/*.md", { query: '?raw', import: 'default', eager: true }));
+		this.defaultClocks = this.importRows(import.meta.glob("@/assets/clocks/*.json", { eager: true, import: "default" }));
+		this.defaultReserves = this.importRows(import.meta.glob("@/assets/reserves/*.json", { eager: true, import: "default" }));
+		const pilots = import.meta.glob("@/assets/pilots/*.json", { eager: true, import: "default" });
+		this.bundledPilots = Object.values(pilots).map(pilot => ({
+			...pilot, name: pilot.name.replace("※", ""), callsign: pilot.callsign.replace("※", ""),
+			...Config.pilotSpecialInfo[pilot.callsign.replace("※", "").toUpperCase()],
+		}));
 	},
 
 	mounted() {
-	this.$router.push("/status");
-
+	if (this.briefingStore) this.briefingStore.notifyChanges = changes => Object.assign(this.edits, changes);
 	document.addEventListener(
 		"click",
 		this.handleMenuClick
@@ -70,6 +150,7 @@ export default {
 	},
 
 	beforeUnmount() {
+	if (this.briefingStore) delete this.briefingStore.notifyChanges;
 	document.removeEventListener(
 		"click",
 		this.handleMenuClick
@@ -77,6 +158,74 @@ export default {
 	},
 
 	methods: {
+		listFoundryPilots() {
+			const actors = this.briefingStore.listPilots();
+			const missing = (this.edits.pilotRoster ?? []).filter(link => !actors.some(actor => actor.id === link.actorId));
+			return [...actors, ...missing.map(({ pilot }) => ({ id: pilot.actorId, name: pilot.name, callsign: pilot.callsign, missing: true }))];
+		},
+		async publishPilot(actorId, unlink = false) {
+			this.edits = await this.briefingStore.save("pilotRoster", { actorId, unlink });
+		},
+		async changeArtwork(poiId = null, reset = false) {
+			if (!this.artwork.editable || this.artworkBusy) return;
+			const previous = (poiId ? this.edits.poiPortraits?.[poiId] : this.edits.planetTexture) ?? null;
+			this.artworkError = null;
+			this.artworkBusy = true;
+			try {
+				const path = reset ? null : await this.briefingStore.pickImage(previous ?? "");
+				if (!reset && (!path || path === previous)) return;
+				if (path) {
+					const image = new Image();
+					if (!poiId) image.crossOrigin = "anonymous";
+					image.src = this.briefingStore.imageUrl(path);
+					try {
+						await image.decode();
+					} catch {
+						throw new Error("The selected image could not be loaded.");
+					}
+				}
+				this.edits = await this.briefingStore.save("artwork", { poiId, path }, previous);
+			} catch (error) {
+				this.artworkError = { poiId, message: error.message };
+			} finally {
+				this.artworkBusy = false;
+			}
+		},
+		findEntryEdit(collection, entry) {
+			const key = collection === "missions" ? "slug" : "id";
+			return this.edits[collection]?.find(item => item[key] === entry[key]) ?? null;
+		},
+		openEditor(collection, entry = null) {
+			if (!this.canEditBriefings) return;
+			let previous;
+			if (collection === "planet") previous = this.edits.planetBriefing ?? null;
+			else if (collection === "header") previous = this.edits.header ?? null;
+			else previous = entry && this.findEntryEdit(collection, entry);
+			this.editor = { collection, entry, previous };
+		},
+		openPilotRemoval(pilot) {
+			if (this.pilotSync) this.editor = { collection: "pilotRoster", entry: pilot };
+		},
+		async saveBriefingEntry(entry) {
+			const { collection, entry: original } = this.editor;
+			let previous = this.editor.previous;
+			if (collection === "missions" && !original) {
+				const deleted = this.findEntryEdit(collection, entry);
+				if (deleted?.deleted) previous = deleted;
+			}
+			this.edits = await this.briefingStore.save(collection, entry, previous);
+		},
+		async deleteBriefingEntry() {
+			const { collection, entry, previous } = this.editor;
+			if (collection === "pilotRoster") {
+				this.edits = await this.briefingStore.save(collection, {
+					actorId: entry.actorId, callsign: entry.callsign, removeFromBriefing: true,
+				});
+				return;
+			}
+			const key = collection === "missions" ? "slug" : "id";
+			this.edits = await this.briefingStore.save(collection, { [key]: entry[key], deleted: true }, previous);
+		},
 		handleMenuClick(event) {
 		const target = event.target;
 
@@ -110,92 +259,24 @@ export default {
 			let headEl = document.querySelector('head');
 			let faviconEl = document.createElement('link');
 			faviconEl.setAttribute('rel', 'shortcut icon');
-			faviconEl.setAttribute('href', favicon);
+			faviconEl.setAttribute('href', publicAssetUrl(favicon));
 			headEl.appendChild(faviconEl);
 		},
-		async importMissions(files) {
-			let filePromises = Object.keys(files).map(path => files[path]());
-			let fileContents = await Promise.all(filePromises);
-			fileContents.forEach(content => {
-				let mission = {};
-				mission["slug"] = content.split("\n")[0];
-				mission["name"] = content.split("\n")[1];
-				mission["status"] = content.split("\n")[2];
-				mission["content"] = content.split("\n").splice(3).join("\n");
-				this.missions = [...this.missions, mission];
-			});
-			this.missions = this.missions.sort(function (a, b) {
-				return b["slug"] - a["slug"];
-			})
-		},
-		async importEvents(files) {
-			let filePromises = Object.keys(files).map(path => files[path]());
-			let fileContents = await Promise.all(filePromises);
-			fileContents.forEach(content => {
-				let event = {};
-				event["title"] = content.split("\n")[0];
-				event["location"] = content.split("\n")[1];
-				event["time"] = content.split("\n")[2];
-				event["thumbnail"] = content.split("\n")[3];
-				event["content"] = content.split("\n").splice(4).join("\n");
-				this.events = [...this.events, event];
-			});
-			this.events = this.events.reverse();
-		},
-		async importClocks(files) {
-			let filePromises = Object.keys(files).map(path => files[path]());
-			let fileContents = await Promise.all(filePromises);
-			fileContents.forEach(content => {
-				this.clocks = JSON.parse(JSON.stringify(content)).default;
+		importMissions(files) {
+			this.defaultMissions = Object.values(files).map(markdown => {
+				const [slug, name, status, ...body] = markdown.split(/\r?\n/);
+				return { slug, name, status, content: body.join("\n") };
 			});
 		},
-		async importReserves(files) {
-			let filePromises = Object.keys(files).map(path => files[path]());
-			let fileContents = await Promise.all(filePromises);
-			fileContents.forEach(content => {
-				this.reserves = JSON.parse(JSON.stringify(content)).default;
-			});
+		importEvents(files) {
+			this.defaultEvents = Object.entries(files).map(([path, markdown]) => {
+				const [title, location, time, thumbnail, ...body] = markdown.split(/\r?\n/);
+				const id = path.split("/").pop();
+				return { id, title, location, time, thumbnail, content: body.join("\n") };
+			}).reverse();
 		},
-		async importPilots(files) {
-			let filePromises = Object.keys(files).map(path => files[path]());
-			let fileContents = await Promise.all(filePromises);
-			fileContents.forEach(content => {
-				let pilotFromJson = JSON.parse(
-				JSON.stringify(content.default ?? content)
-				);
-				// In case the pilot was added from a copy on compcon via sharecode, remove the "reference mark" symbol
-				pilotFromJson.name = pilotFromJson.name.replace("※", "");
-				pilotFromJson.callsign = pilotFromJson.callsign.replace("※", "");
-				let pilotFromVue = this.pilotSpecialInfo[pilotFromJson.callsign.toUpperCase()];
-				let pilot = {
-					...pilotFromJson,
-					...pilotFromVue,
-				};
-				this.pilots = [...this.pilots, pilot];
-				pilot.clocks.forEach(content => {
-					let clock = {};
-					clock["type"] = `Pilot Project // ${pilot.callsign}`;
-					clock["result"] = "";
-					clock["name"] = content.title;
-					clock["description"] = content.description;
-					clock["value"] = content.progress;
-					clock["max"] = content.segments;
-					clock["color"] = "#3CB043";
-					this.clocks = [...this.clocks, clock];
-				});
-
-				pilot.reserves.forEach(content => {
-					let reserve = {};
-					reserve["type"] = content.type;
-					reserve["name"] = content.name;
-					reserve["description"] = content.description;
-					reserve["label"] = content.label;
-					reserve["cost"] = content.cost;
-					reserve["notes"] = content.notes;
-					reserve["callsign"] = pilot.callsign.toUpperCase();
-					this.reserves = [...this.reserves, reserve];
-				});
-			});
+		importRows(files) {
+			return Object.entries(files).flatMap(([path, rows]) => rows.map((row, index) => ({ ...row, id: row.id ?? `${path}:${index}` })));
 		},
 	},
 };

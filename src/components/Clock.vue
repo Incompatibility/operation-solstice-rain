@@ -85,18 +85,6 @@ export default defineComponent({
 		},
 	},
 	setup(props) {
-		const dataArray: number[] = [];
-		const colorArray: string[] = [];
-		for (let index = 0; index < props.clock.max; index++) {
-			dataArray.push(1);
-
-			if (index < props.clock.value) {
-				colorArray.push(props.clock.color);
-			} else {
-				colorArray.push("#AAA");
-			}
-		}
-		const data = ref(dataArray);
 		const animation = !props.animate ? null : { delay: parseInt(props.animationDelay) };
 		const options = ref({
 			responsive: true,
@@ -106,10 +94,12 @@ export default defineComponent({
 		});
 
 		const testData = computed(() => ({
+			labels: Array.from({ length: props.clock.max }, (_, index) => `Segment ${index + 1}`),
 			datasets: [
 				{
-					data: data.value,
-					backgroundColor: colorArray,
+					data: Array.from({ length: props.clock.max }, () => 1),
+					backgroundColor: Array.from({ length: props.clock.max }, (_, index) =>
+						index < props.clock.value ? props.clock.color : "#AAA"),
 				},
 			],
 		}));

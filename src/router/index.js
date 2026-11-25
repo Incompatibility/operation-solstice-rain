@@ -1,4 +1,4 @@
-import { createMemoryHistory, createWebHistory, createRouter } from "vue-router";
+import { createMemoryHistory, createWebHashHistory, createWebHistory, createRouter } from "vue-router";
 
 import Persons from "@/views/PersonsView.vue";
 import Status from "@/views/StatusView.vue";
@@ -43,8 +43,9 @@ const routes = [
 	},
 ];
 
+const createHistory = import.meta.env.MODE === "foundry" ? createWebHashHistory : createWebHistory;
 const router = createRouter({
-	history: import.meta.env.SSR ? createMemoryHistory() : createWebHistory(),
+	history: import.meta.env.SSR ? createMemoryHistory() : createHistory(),
 	routes,
 	scrollBehavior(to, from, savedPosition) {
 		if (to.hash) {

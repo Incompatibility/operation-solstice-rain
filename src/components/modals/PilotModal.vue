@@ -8,7 +8,13 @@
 			<div class="rhombus-back">&nbsp;</div>
 		</div>
 		<div class="pilot markdown">
-			<div v-html="getHistory()"/>
+			<template v-if="pilot.actorId">
+				<h2 v-if="pilot.text_appearance">Appearance</h2>
+				<p v-if="pilot.text_appearance">{{ pilot.text_appearance }}</p>
+				<h2>History</h2>
+				<p>{{ pilot.history || "[ERR: REDACTED]" }}</p>
+			</template>
+			<div v-else v-html="getHistory()"/>
 		</div>
 	</div>
 	<div class="pilot-modal portrait">
@@ -27,6 +33,7 @@
 
 <script>
 import { VueMarkdownIt } from '@f3ve/vue-markdown-it';
+import { publicAssetUrl } from '@/utils/publicAssetUrl.js';
 
 export default {
 	components: {
@@ -46,10 +53,10 @@ export default {
 	},
 	computed: {
     pilotPortrait() {
-      return `/pilots/${this.pilot.callsign.toUpperCase()}.webp`
+      return this.pilot.portraitUrl ?? publicAssetUrl(`/pilots/${this.pilot.callsign.toUpperCase()}.webp`)
     },
     mechPortrait() {
-      return `/mechs/${this.pilot.callsign}.webp`
+      return publicAssetUrl(`/mechs/${this.pilot.callsign.toUpperCase()}.webp`)
     },
 	},
 	methods: {

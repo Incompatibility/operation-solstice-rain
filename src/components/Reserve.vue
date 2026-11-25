@@ -18,6 +18,8 @@
 </template>
 
 <script>
+import { publicAssetUrl } from "@/utils/publicAssetUrl.js";
+
 export default {
 	name: "Reserve",
 	components: {},
@@ -41,7 +43,7 @@ export default {
 			});
 
 			if (pilot) {
-				return pilot.cloud_portrait;
+				return pilot.portraitUrl ?? publicAssetUrl(pilot.cloud_portrait);
 			}
 		},
 	},

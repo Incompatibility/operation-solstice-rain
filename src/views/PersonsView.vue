@@ -44,7 +44,7 @@
 
           <img
             class="poi-portrait"
-            :src="selectedPerson.portrait"
+            :src="selectedPortrait"
             :alt="selectedPerson.name"
             @error="onImageError"
           />
@@ -62,6 +62,15 @@
             <p class="poi-subtitle">
               {{ selectedPerson.pronouns }}
             </p>
+
+            <div v-if="artwork?.editable" class="briefing-edit-actions poi-artwork-actions">
+              <button type="button" :disabled="artwork.busy" @click="artwork.change(selectedPerson.id)">Change portrait</button>
+              <button v-if="artwork.portraits[selectedPerson.id]" type="button" :disabled="artwork.busy"
+                @click="artwork.change(selectedPerson.id, true)">Use default portrait</button>
+              <p v-if="artwork.error?.poiId === selectedPerson.id" class="briefing-action-error" role="alert">
+                {{ artwork.error.message }}
+              </p>
+            </div>
 
             <div class="poi-fields">
               <p>
@@ -101,9 +110,13 @@
 
 <script>
 import persons from "@/assets/info/poi-profiles.json";
+import { publicAssetUrl } from "@/utils/publicAssetUrl.js";
 
 export default {
   name: "PersonsView",
+  props: {
+    artwork: { type: Object, default: null },
+  },
 
   data() {
     return {
@@ -117,6 +130,9 @@ export default {
       return this.persons.find(
         person => person.id === this.selectedId
       );
+    },
+    selectedPortrait() {
+      return this.artwork?.portraits[this.selectedId] ?? publicAssetUrl(this.selectedPerson?.portrait);
     }
   },
 
@@ -125,7 +141,7 @@ export default {
       const fallback = "/icons/npc.svg";
 
       if (!event.target.src.endsWith(fallback)) {
-        event.target.src = fallback;
+        event.target.src = publicAssetUrl(fallback);
       }
     }
   }
@@ -222,6 +238,10 @@ export default {
 .poi-fields {
   margin-top: 25px;
   line-height: 1.9;
+}
+
+.poi-artwork-actions {
+  padding-left: 0;
 }
 
 .poi-fields strong {

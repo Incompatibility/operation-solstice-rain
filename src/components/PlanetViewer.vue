@@ -15,13 +15,18 @@
             <h1>CRESSIDIUM</h1>
           </div>
 
-          <button
-            ref="closeButton"
-            class="close-button"
-            @click="emit('close')"
-          >
-            CLOSE ✕
-          </button>
+          <div class="orbital-actions">
+            <button v-if="artwork.editable" type="button" class="close-button" :disabled="artwork.busy"
+              @click="artwork.change()">Change globe texture</button>
+            <button v-if="artwork.editable && artwork.customPlanetTexture" type="button" class="close-button"
+              :disabled="artwork.busy" @click="artwork.change(null, true)">Use default texture</button>
+            <button v-if="editable" type="button" class="close-button" @click="emit('edit-description')">
+              Edit planetary description
+            </button>
+            <button ref="closeButton" type="button" class="close-button" @click="emit('close')">
+              CLOSE ✕
+            </button>
+          </div>
         </div>
 
 <div class="viewer-layout">
@@ -40,13 +45,16 @@
       <div v-if="error" class="loading">
         {{ error }}
       </div>
+      <div v-if="artwork.error && artwork.error.poiId === null" class="loading" role="alert">
+        {{ artwork.error.message }}
+      </div>
     </div>
 
 
     <section class="briefing-panel">
       <div class="briefing-content">
         <VueMarkdownIt
-          :source="cressidiumBriefing"
+          :source="briefing"
           class="planet-markdown"
         />
       </div>
@@ -144,12 +152,15 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createAtmosphere } from "@/utils/createAtmosphere.js";
 import { createCloudLayer } from "@/utils/createCloudLayer.js";
+import { watchPlanetTexture } from "@/utils/watchPlanetTexture.js";
 import locations from "@/assets/info/planet-locations.json";
 import { VueMarkdownIt } from "@f3ve/vue-markdown-it";
-import cressidiumBriefing from "@/assets/planet-briefings/cressidium.md?raw";
-
-
-const emit = defineEmits(["close"]);
+const props = defineProps({
+  briefing: { type: String, required: true },
+  editable: { type: Boolean, default: false },
+  artwork: { type: Object, required: true },
+});
+const emit = defineEmits(["close", "edit-description"]);
 
 const canvasHost = ref(null);
 const closeButton = ref(null);
@@ -173,14 +184,13 @@ let camera;
 let controls;
 let geometry;
 let material;
-let texture;
+let stopWatchingTexture;
 let planet;
 let atmosphere;
 let cloudLayer;
 let observer;
 let animationFrame = 0;
 let lastFrame = 0;
-let destroyed = false;
 
 function resize() {
   if (!renderer || !camera || !canvasHost.value) return;
@@ -478,28 +488,22 @@ onMounted(() => {
 
     canvasHost.value.appendChild(renderer.domElement);
 
-    texture = new THREE.TextureLoader().load(
-      "/planets/cressidium.png",
-      () => {
-        if (!destroyed) loading.value = false;
-      },
-      undefined,
-      (reason) => {
-        console.error(reason);
-        if (!destroyed) {
-          error.value = "PLANETARY TEXTURE UNAVAILABLE";
-        }
-      }
-    );
-
-    texture.colorSpace = THREE.SRGBColorSpace;
-
     geometry = new THREE.SphereGeometry(1, 96, 64);
 
     material = new THREE.MeshStandardMaterial({
-      map: texture,
       roughness: 1,
       metalness: 0
+    });
+    stopWatchingTexture = watchPlanetTexture(() => props.artwork.planetTexture, material, {
+      onStart: () => {
+        loading.value = true;
+        error.value = "";
+      },
+      onLoad: () => { loading.value = false; },
+      onError: reason => {
+        console.error(reason);
+        error.value = "PLANETARY TEXTURE UNAVAILABLE";
+      },
     });
 
     planet = new THREE.Mesh(geometry, material);
@@ -571,8 +575,6 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  destroyed = true;
-
   window.removeEventListener("keydown", handleKeydown);
 
   cancelAnimationFrame(animationFrame);
@@ -605,8 +607,8 @@ onBeforeUnmount(() => {
   atmosphere?.material.dispose();
 
   geometry?.dispose();
+  stopWatchingTexture?.();
   material?.dispose();
-  texture?.dispose();
 
   if (renderer) {
     renderer.dispose();
@@ -884,6 +886,13 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-rows: minmax(320px, 65vh) minmax(220px, 1fr);
   min-height: 0;
+}
+
+.orbital-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .briefing-panel {

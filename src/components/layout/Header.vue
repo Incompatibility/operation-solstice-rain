@@ -22,7 +22,7 @@
 			aria-label="Open Cressidium planetary viewer"
 			@click="viewerOpen = true"
 			>
-			<PlanetGlobe />
+			<PlanetGlobe :texture-url="artwork.planetTexture" />
 			</button>
 			<div class="location-info">
 				<div id="planet-year" class="location-row">
@@ -54,6 +54,10 @@
 
 		<PlanetViewer
 		v-if="viewerOpen"
+		:briefing="planetBriefing"
+		:editable="editable"
+		:artwork="artwork"
+		@edit-description="$emit('edit-planet')"
 		@close="viewerOpen = false"
 		/>
 
@@ -67,12 +71,16 @@ import PlanetGlobe from "@/components/PlanetGlobe.vue";
 import PlanetViewer from "@/components/PlanetViewer.vue";
 
 export default {
+  emits: ["edit-planet"],
   components: {
     PlanetGlobe,
     PlanetViewer
   },
 
   props: {
+    artwork: { type: Object, required: true },
+    planetBriefing: { type: String, required: true },
+    editable: { type: Boolean, default: false },
     planetPath: {
       type: String,
       required: true

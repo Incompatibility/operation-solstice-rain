@@ -1,10 +1,11 @@
 <template>
 	<div class="event">
 		<div class="name">
-			<h1>{{ event.location }} // {{ event.time }}</h1>
+			<h1 v-if="event.location || event.time">{{ [event.location, event.time].filter(Boolean).join(" // ") }}</h1>
 			<h2>{{ event.title }}</h2>
 		</div>
-		<img class="thumbnail" :src="event.thumbnail" />
+		<p v-if="event.hidden" class="briefing-visibility">Hidden from players</p>
+		<img v-if="thumbnailUrl" class="thumbnail" :src="thumbnailUrl" alt="" />
 		<div class="preview">
 			{{ getPreview }}
 		</div>
@@ -16,6 +17,7 @@
 import EventModal from "@/components/modals/EventModal.vue";
 
 import removeMd from "remove-markdown";
+import { publicAssetUrl } from "@/utils/publicAssetUrl.js";
 
 export default {
 	name: "Event",
@@ -34,6 +36,9 @@ export default {
 		};
 	},
 	computed: {
+		thumbnailUrl() {
+			return publicAssetUrl(this.event.thumbnail);
+		},
 		getPreview() {
 			return this.removeMd(this.event.content).substring(0, 200) + "...";
 		},

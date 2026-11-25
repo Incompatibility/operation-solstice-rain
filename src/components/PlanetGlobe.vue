@@ -18,6 +18,9 @@ import { ref, onMounted, onBeforeUnmount } from "vue";
 import * as THREE from "three";
 import { createAtmosphere } from "@/utils/createAtmosphere.js";
 import { createCloudLayer } from "@/utils/createCloudLayer.js";
+import { watchPlanetTexture } from "@/utils/watchPlanetTexture.js";
+
+const props = defineProps({ textureUrl: { type: String, required: true } });
 
 const container = ref(null);
 const failed = ref(false);
@@ -25,7 +28,7 @@ const failed = ref(false);
 let renderer;
 let geometry;
 let material;
-let texture;
+let stopWatchingTexture;
 let sphere;
 let atmosphere;
 let cloudLayer;
@@ -61,26 +64,19 @@ onMounted(() => {
 
     container.value.appendChild(renderer.domElement);
 
-    // Load Orogen surface texture
-    texture = new THREE.TextureLoader().load(
-      "/planets/cressidium.png",
-      undefined,
-      undefined,
-      (error) => {
-        console.error("Planet texture failed:", error);
-        failed.value = true;
-      }
-    );
-
-    texture.colorSpace = THREE.SRGBColorSpace;
-
     // Planet geometry and material
     geometry = new THREE.SphereGeometry(1, 64, 64);
 
     material = new THREE.MeshStandardMaterial({
-      map: texture,
       roughness: 1,
       metalness: 0
+    });
+    stopWatchingTexture = watchPlanetTexture(() => props.textureUrl, material, {
+      onLoad: () => { failed.value = false; },
+      onError: error => {
+        console.error("Planet texture failed:", error);
+        failed.value = !material.map;
+      },
     });
 
     sphere = new THREE.Mesh(geometry, material);
@@ -153,8 +149,8 @@ onBeforeUnmount(() => {
   atmosphere?.geometry.dispose();
   atmosphere?.material.dispose();  
   geometry?.dispose();
+  stopWatchingTexture?.();
   material?.dispose();
-  texture?.dispose();
 
 cloudLayer?.geometry.dispose();
 cloudLayer?.material.dispose();

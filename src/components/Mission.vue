@@ -3,6 +3,7 @@
     <div class="name">
       <h1>Mission // {{ mission.slug }}</h1>
       <h2>{{ mission.name }}</h2>
+      <p v-if="mission.hidden" class="briefing-visibility">Hidden from players</p>
     </div>
     <div class="status" :class="mission.status">
       {{ missionStatus }}
@@ -12,6 +13,8 @@
 </template>
 
 <script>
+import { publicAssetUrl } from "@/utils/publicAssetUrl.js";
+
 export default {
   components: {},
   props: {
@@ -26,7 +29,7 @@ export default {
   },
   computed: {
     icon() {
-      return `/icons/mission-${this.mission.status}.svg`;
+      return publicAssetUrl(`/icons/mission-${this.mission.status}.svg`);
     },
     missionStatus() {
       if (this.mission.status === "start") return "Current\nBriefing";

@@ -6,13 +6,18 @@
 				<h1>BEATS</h1>
 			</div>
 			<div class="section-content-container">
+				<div v-if="editable" class="briefing-edit-actions">
+					<button type="button" @click="$emit('edit-content', 'events')">New log</button>
+					<button v-if="selectedEvent" type="button" @click="$emit('edit-content', 'events', selectedEvent)">Edit log</button>
+				</div>
 				<div class="events-list-container">
+					<p v-if="events.length === 0" class="briefing-empty">No logs available.</p>
 					<Event
 						v-for="item in events"
-						:key="item.title"
+						:key="item.id"
 						:event="item"
 						:animate="animate"
-						@select-event="selectEvent(item)" />
+						@select-event="selectedEventId = item.id" />
 				</div>
 			</div>
 		</section>
@@ -25,9 +30,11 @@
 				<div class="rhombus-back">&nbsp;</div>
 			</div>
 			<div class="section-content-container extra-margins">
-				<div class="event" v-if="selectedEvent.title">
+				<div class="event" v-if="selectedEvent">
 					<div class="name">
-						<h1>{{ selectedEvent.location }} // {{ selectedEvent.time }}</h1>
+						<h1 v-if="selectedEvent.location || selectedEvent.time">
+							{{ [selectedEvent.location, selectedEvent.time].filter(Boolean).join(" // ") }}
+						</h1>
 						<h2>{{ selectedEvent.title }}</h2>
 					</div>
 					<vue-markdown-it :source="selectedEvent.content" class="markdown" />
@@ -42,11 +49,13 @@ import { VueMarkdownIt } from '@f3ve/vue-markdown-it';
 import Event from "@/components/Event.vue";
 
 export default {
+	emits: ["edit-content"],
 	components: {
 		VueMarkdownIt,
 		Event,
 	},
 	props: {
+		editable: { type: Boolean, default: false },
 		animate: {
 			type: Boolean,
 			required: true,
@@ -57,16 +66,12 @@ export default {
 		},
 	},
 	data() {
-		return {
-			selectedEvent:{
-				type: Object,
-			}
-		};
+		return { selectedEventId: null };
 	},
-	methods: {
-		selectEvent(event) {
-			this.selectedEvent = event;
-		}
-	}
+	computed: {
+		selectedEvent() {
+			return this.events.find(event => event.id === this.selectedEventId);
+		},
+	},
 };
 </script>

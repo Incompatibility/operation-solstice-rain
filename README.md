@@ -13,7 +13,7 @@ Go over mission briefings within the LANCER Universe in style by showing your pl
 
 ## Requirements
 
-- Node (v14+)
+- Node.js (v22 recommended)
 - Light Text Editor (VSCode Recommended)
 - Recommended VSCode extensions:
   - Color Info
@@ -34,6 +34,7 @@ Go over mission briefings within the LANCER Universe in style by showing your pl
 
 `npm run dev` - Serve the webapp with hot reloads (for development work)  
 `npm run build` - Build for production  
+`npm run build:foundry` - Build the installable Foundry module\
 `npm run serve OR npm run preview` - Locally preview production build  
 `npm run format` - Format all code files using `prettier` based on rules set in `.prettierrc.json` (for development work)  
 
@@ -45,9 +46,9 @@ Customization is handled in a couple of places.
 
 This file holds a majority of the colors, fonts, and sizes of the webapp. Play around with the values in the marked customization section.
 
-### Index.html
+### Background
 
-This file houses the [VantaJS](https://www.vantajs.com/) background used in the web application. Go to the site, mess with the different effect options, and once you're ready, replace the `VANTA.GLOBE` script with your customized one. Note that if you use a different effect, you'll have to replace the script url above it with one from [their CDN repository](https://cdn.jsdelivr.net/npm/vanta@latest/dist/).
+`src/background.js` configures the bundled VantaJS globe background. Adjust the `VANTA.GLOBE` options there to customize it.
 
 ### /public folder
 
@@ -92,4 +93,10 @@ Alternatively, if you use github, you can probably rely on github-pages. Take a 
 
 ## Usage within FoundryVTT
 
-install the [Inline Webviewer](https://foundryvtt.com/packages/inlinewebviewer) module and use the new button to send websites to your players - namely this one. Best viewed at 1920x1080.
+The native module targets Foundry VTT 13.351 with LANCER 3.1.3. Build it with `npm run build:foundry`, then copy `dist-foundry/lancer-briefings/` into the v13 instance's `Data/modules/` folder. On Windows, use **Browse User Data** from that instance's taskbar menu to find the folder. Enable **Lancer Briefings** in your LANCER world and open it from **Token Controls**. See [AGENTS.md](AGENTS.md) for the installation commands and smoke test.
+
+GMs can add, edit, and delete missions and logs, choose which logs appear in the player briefing, and edit the planetary description from the Cressidium viewer. Saves belong to the active world. Players see the latest visible content when they open the briefing.
+
+Use **Change portrait** in **POIs** or **Change globe texture** in the planetary viewer to pick images through Foundry’s File Picker.
+
+On **Status**, GMs can edit the header, reserves, and clocks. On **Pilots**, link a LANCER pilot actor to publish its briefing details and pick up later COMP/CON imports from its **RM-4://SYNC** tab.

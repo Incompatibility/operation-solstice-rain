@@ -49,7 +49,7 @@
                 <br>
                 <div class="chip-container" v-for="talent in pilot.talents" :key="talent.id">
                   <span class="chip"><i aria-hidden="true" class="notranslate cci cci-talent"></i>{{
-                    getTalent(talent.id, talent.rank) }}</span>
+                    getTalent(talent) }}</span>
                 </div>
               </div>
             </div>
@@ -59,7 +59,7 @@
                 <br>
                 <div class="chip-container" v-for="license in pilot.licenses" :key="license.id">
                   <span class="chip"><i aria-hidden="true" class="notranslate cci cci-license"></i>{{
-                    getLicense(license.id, license.rank) }}</span>
+                    getLicense(license) }}</span>
                 </div>
               </div>
             </div>
@@ -86,7 +86,7 @@
             </div>
           </div>
         </div>
-        <div class="row biometrics-container">
+        <div v-if="activeMech" class="row biometrics-container">
           <div class="mech-record flex-container-cols" @click="mechModal">
             <div style="width:100%">
               MECHANICAL BLUEPRINT VALID [[{{ randomNumber(14, 22) }}TB]] <br />
@@ -138,6 +138,7 @@
 
 <script>
 import 'external-svg-loader'
+import { publicAssetUrl } from '@/utils/publicAssetUrl.js'
 import lancerData from '@massif/lancer-data'
 import ktbData from 'lancer-ktb-data'
 import nrfawData from 'lancer-nrfaw-data'
@@ -177,16 +178,26 @@ export default {
   },
   data() {
     return {
-      activeMech: {},
       bond: {},
     }
   },
   computed: {
+    activeMech() {
+      const mech = this.pilot.mechs.find(item => item.id === this.pilot.state?.active_mech_id) ?? this.pilot.mechs[0];
+      if (!mech) return null;
+      const frame = this.frames.find(item => item.id === mech.frame);
+      return {
+        ...mech,
+        frame_description: mech.frame_description ?? frame?.description ?? "",
+        frame_name: mech.frame_name ?? frame?.name ?? "Unassigned frame",
+        manufacturer: mech.manufacturer || frame?.source || "",
+      };
+    },
     pilotPortrait() {
-      return `/pilots/${this.pilot.callsign.toUpperCase()}.webp`
+      return this.pilot.portraitUrl ?? publicAssetUrl(`/pilots/${this.pilot.callsign.toUpperCase()}.webp`)
     },
     mechPortrait() {
-      return `/mechs/${this.pilot.callsign.toUpperCase()}.webp`
+      return publicAssetUrl(`/mechs/${this.pilot.callsign.toUpperCase()}.webp`)
     },
     pilotGear() {
       return [...lancerData.pilot_gear]
@@ -210,8 +221,8 @@ export default {
       return [...lancerData.frames, ...ktbData.frames, ...nrfawData.frames, ...longrimData.frames]
     },
     mechManufacturerIcon() {
-      if (this.activeMech.manufacturer)
-        return `/faction-logos/${this.activeMech.manufacturer.toLowerCase()}.svg`
+      if (this.activeMech?.manufacturer)
+        return publicAssetUrl(`/faction-logos/${this.activeMech.manufacturer.toLowerCase()}.svg`)
       return ''
     },
     pilotCode() {
@@ -243,7 +254,6 @@ export default {
     },
   },
   created() {
-    this.getActiveMech();
     this.getBond();
   },
   methods: {
@@ -251,32 +261,6 @@ export default {
       this.bond = this.bonds.find((obj) => {
         return obj.id === this.pilot.bondId
       })
-    },
-    getActiveMech() {
-      const activeMechID = this.pilot.state.active_mech_id
-      const mech = this.pilot.mechs.find((obj) => {
-        return obj.id === activeMechID
-      })
-
-      if (mech) {
-        this.activeMech = mech
-      }
-      else {
-        // default to missing frame in case pilot has no mechs
-        this.pilot.mechs[0] ? this.activeMech = this.pilot.mechs[0] : lancerData.frames.find((obj) => { return obj.id === 'missing_frame' })
-      }
-
-      let frame = this.frames.find((obj) => {
-        return obj.id === this.activeMech.frame
-      })
-
-      if (!frame)
-        frame = lancerData.frames[0]
-
-      this.activeMech.frame_description = frame.description
-      this.activeMech.frame_name = frame.name
-      this.activeMech.manufacturer = frame.source
-      this.activeMech.mechtype = frame.mechtype.join(' // ')
     },
     getHistory() {
       if (this.pilot.history === "") {
@@ -299,20 +283,20 @@ export default {
     },
     getSkill(skill) {
       let sk = this.skills.find((x) => x.id == skill.id);
-      return sk.name + " +" + (skill.rank * 2)
+      return (skill.name ?? sk?.name ?? skill.id) + " +" + (skill.rank * 2)
     },
-    getTalent(id, value) {
+    getTalent({id, rank: value, name}) {
       let talent = this.talents.find((x) => x.id == id);
-      let response = talent.name + " "
+      let response = (name ?? talent?.name ?? id) + " "
 
       for (let i = 0; i < value; i++) {
         response += "I"
       }
       return response;
     },
-    getLicense(id, value) {
+    getLicense({id, rank: value, name, source}) {
       let frame = this.frames.find((x) => x.id == id);
-      let response = frame.source + " " + frame.name + " "
+      let response = [source || frame?.source, name ?? frame?.name ?? id].filter(Boolean).join(" ") + " "
 
       for (let i = 0; i < value; i++) {
         response += "I"
@@ -320,7 +304,7 @@ export default {
       return response;
     },
     capitalize(str) {
-      return str.split(' ').map(word => word[0].toUpperCase() + word.slice(1)).join(' ');
+      return str.split(' ').filter(Boolean).map(word => word[0].toUpperCase() + word.slice(1)).join(' ');
     },
     reverse(str) {
       const words = str.split(' ')

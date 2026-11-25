@@ -13,5 +13,6 @@ import "@/assets/styles/_animations.css";
 
 import router from "./router";
 
-createApp(App).use(router).use(Oruga).mount("#app");
+const briefingStore = import.meta.env.MODE === "foundry" ? window.frameElement?.briefingStore : undefined;
+createApp(App, { briefingStore }).use(router).use(Oruga).mount("#app");
 // TODO: Introduce eslint with vue3 + typescript support

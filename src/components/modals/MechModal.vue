@@ -43,7 +43,8 @@
         </div>
       </div>
       <div class="mech-notes markdown">
-        <div v-html="getFrameDescription()"/>
+        <p v-if="pilot.actorId">{{ mech.frame_description }}</p>
+        <div v-else v-html="getFrameDescription()"/>
       </div>
     </div>
   </div>
@@ -65,6 +66,7 @@
 
 <script>
 import { VueMarkdownIt } from '@f3ve/vue-markdown-it';
+import { publicAssetUrl } from '@/utils/publicAssetUrl.js';
 
 export default {
   components: {
@@ -116,10 +118,10 @@ export default {
   },
   computed: {
     pilotPortrait() {
-      return `/pilots/${this.pilot.callsign.toUpperCase()}.webp`
+      return publicAssetUrl(`/pilots/${this.pilot.callsign.toUpperCase()}.webp`)
     },
     mechPortrait() {
-      return `/mechs/${this.pilot.callsign.toUpperCase()}.webp`
+      return this.mech.portraitUrl ?? publicAssetUrl(`/mechs/${this.pilot.callsign.toUpperCase()}.webp`)
     },
   },
   methods: {
@@ -131,7 +133,7 @@ export default {
       let resolveMountSlots = (type, item, idx, arr) => {
         item = item || {id: "", flavorName: ""}
         const mountObj = this.weaponsData.find((obj) => { return item.id === obj.id }) || null
-        item.flavorName = mountObj?.name || "";
+        item.flavorName = item.name || mountObj?.name || "";
 
         switch (type) {
           case 'Main':
@@ -173,7 +175,7 @@ export default {
       let resolveMechSystems = (item, idx, arr) => {
         item = item || {id: "", flavorName: ""}
         const mountObj = this.systemsData.find((obj) => { return item.id === obj.id }) || null
-        item.flavorName = mountObj?.name || "ERR: DATA NOT FOUND";
+      item.flavorName = item.name || mountObj?.name || "ERR: DATA NOT FOUND";
 
         this.mechSystems = [...this.mechSystems, item]
       }

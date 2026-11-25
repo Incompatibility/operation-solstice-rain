@@ -5,6 +5,11 @@
       "name": "lancer-briefings",
       "dependencies": {
         "@f3ve/vue-markdown-it": "^0.2.2",
+        "@fontsource/big-shoulders-display": "^5.3.0",
+        "@fontsource/inconsolata": "^5.3.0",
+        "@fontsource/raleway": "^5.3.0",
+        "@fontsource/roboto": "^5.3.0",
+        "@fontsource/titillium-web": "^5.3.0",
         "@massif/lancer-data": "^3.1.7",
         "@oruga-ui/oruga-next": "^0.5.5",
         "chart.js": "^3.9.1",
@@ -13,6 +18,7 @@
         "lancer-longrim-data": "^1.0.11",
         "lancer-nrfaw-data": "^1.0.8",
         "remove-markdown": "^0.5.0",
+        "three": "^0.187.0",
         "typeit": "^8.7.0",
         "vue": "^3.2.37",
         "vue-chart-3": "^3.1.8",
@@ -147,6 +153,16 @@
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.25.5", "", { "os": "win32", "cpu": "x64" }, "sha512-TXv6YnJ8ZMVdX+SXWVBo/0p8LTcrUYngpWjvm91TMjjBQii7Oz11Lw5lbDV5Y0TzuhSJHwiH4hEtC1I42mMS0g=="],
 
     "@f3ve/vue-markdown-it": ["@f3ve/vue-markdown-it@0.2.3", "", { "dependencies": { "markdown-it": "^14.1.0" }, "peerDependencies": { "vue": "^3.3.4" } }, "sha512-v0VNd7wb55kwsUUy3n6DLI9+0FYSG0PrCTD3bWuSRo6WS3OHD5wghh/aHzebVdsVkSBXfVpiEUlMA3DrxLs7Lw=="],
+
+    "@fontsource/big-shoulders-display": ["@fontsource/big-shoulders-display@5.3.0", "", {}, "sha512-d4+Tcsq/WfoKeqWfB6wFdeNDsSYYnilJbSNNpf5w53MlWrGHAc9YvkAjC6id6PgFDiGaFKsXfP0RFAQtpt0bog=="],
+
+    "@fontsource/inconsolata": ["@fontsource/inconsolata@5.3.0", "", {}, "sha512-12UZvQzR9rcgFv1Wb2vy9NvMqleh4fVZ9W5Ww/S3CamaRLeUfCkfXersbiqcyCkH82etGTTRyHd5cJYDJ2W27w=="],
+
+    "@fontsource/raleway": ["@fontsource/raleway@5.3.0", "", {}, "sha512-BTWr1I14Ji0DWpS/KCIq/CXcvxXWgMO73gynWpbYv7A5wlPhLevozgRmdPJvZmUf0fhH+Lju+F4nigJ6Ums24A=="],
+
+    "@fontsource/roboto": ["@fontsource/roboto@5.3.0", "", {}, "sha512-BapRJOWYP+LZ21zp+wBQjfpPYKRoxc4LspJ/RLuI+HSMBD5u/X4O+ESDrSvEqDSy0rAl7GwBJ+09mdc16cVQ1Q=="],
+
+    "@fontsource/titillium-web": ["@fontsource/titillium-web@5.3.0", "", {}, "sha512-+nO3ACtHoBgBgq5rzKYImyJqcbRR5cG7D5O73Iu9qMEVlpQ4KVpdDs+XJexZ6Tgcek4xSlkCI82Xd3yLNF++6w=="],
 
     "@jridgewell/gen-mapping": ["@jridgewell/gen-mapping@0.3.8", "", { "dependencies": { "@jridgewell/set-array": "^1.2.1", "@jridgewell/sourcemap-codec": "^1.4.10", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-imAbBGkb+ebQyxKgzv5Hu2nmROxoDOXHh80evxdoXNOrvAnVx7zimzc1Oo5h9RlfV4vPXaE2iM5pOFbvOCClWA=="],
 
@@ -435,6 +451,8 @@
     "superjson": ["superjson@2.2.2", "", { "dependencies": { "copy-anything": "^3.0.2" } }, "sha512-5JRxVqC8I8NuOUjzBbvVJAKNM8qoVuH0O77h4WInc/qC2q5IreqKxYwgkga3PfA22OayK2ikceb/B26dztPl+Q=="],
 
     "supports-color": ["supports-color@7.2.0", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw=="],
+
+    "three": ["three@0.187.0", "", {}, "sha512-Qiu7R+Cmh8CstZsY1uJOSWnVlfo7ZtNLV7mF8Jltk3LB3AtDu9cRZlcnRKkAk8Y4z6KKw35z7Y7Urd7jWY8etA=="],
 
     "tinyglobby": ["tinyglobby@0.2.14", "", { "dependencies": { "fdir": "^6.4.4", "picomatch": "^4.0.2" } }, "sha512-tX5e7OM1HnYr2+a2C/4V0htOcSQcoSTH9KgJnVvNm5zm/cyEWKJ7j7YutsH9CxMdtOkkLFy2AHrMci9IM8IPZQ=="],
 

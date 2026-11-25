@@ -7,9 +7,15 @@
 				<h1>Mission Log</h1>
 			</div>
 			<div class="section-content-container">
+				<div v-if="editable" class="briefing-edit-actions">
+					<button type="button" @click="$emit('edit-content', 'header', header)">Edit header</button>
+					<button type="button" @click="$emit('edit-content', 'missions')">New mission</button>
+					<button v-if="selectedMission" type="button" @click="$emit('edit-content', 'missions', selectedMission)">Edit mission</button>
+				</div>
 				<div class="mission-list-container">
-					<Mission v-for="item in missions" :key="item.slug" :mission="item" :selected="missionSlug"
-						@click="selectMission(item.slug)" />
+					<p v-if="missions.length === 0" class="briefing-empty">No missions available.</p>
+					<Mission v-for="item in missions" :key="item.slug" :mission="item" :selected="selectedMission.slug"
+						@click="missionSlug = item.slug" />
 				</div>
 			</div>
 		</section>
@@ -19,34 +25,49 @@
 				<h1>Current Assignment</h1>
 			</div>
 			<div class="section-content-container">
-				<vue-markdown-it :source="missionMarkdown" class="markdown" />
+				<vue-markdown-it v-if="selectedMission" :source="selectedMission.content" class="markdown" />
 			</div>
 		</section>
-		<div>
-		<section id="reserves" class="section-container" :style="{ 'animation-delay': animationDelay }">
-			<div class="section-header clipped-medium-backward">
-				<img src="/icons/squad.svg" />
-				<h1>Reserves</h1>
-			</div>
-			<div class="section-content-container">
-				<div class="reserves-list-container">
-					<Reserve v-for="item in reserves" :key="item.name" :reserve="item" :pilots="pilots" />
+		<div class="status-support">
+			<section id="reserves" class="section-container" :style="{ 'animation-delay': animationDelay }">
+				<div class="section-header clipped-medium-backward">
+					<img src="/icons/squad.svg" />
+					<h1>Reserves</h1>
 				</div>
-			</div>
-		</section>
-		<section id="clocks" class="section-container" :style="{ 'animation-delay': animationDelay }">
-			<div class="section-header clipped-medium-backward">
-				<img src="/icons/protocol.svg" />
-				<h1>Clocks</h1>
-			</div>
-			<div class="section-content-container">
-				<div class="clocks-list-container">
-					<Clock v-for="item in clocks" :key="item.name" :clock="item" :animate="animate"
-						:animation-delay="clockAnimationDelay" />
+				<div class="section-content-container">
+					<div v-if="editable" class="briefing-edit-actions">
+						<button type="button" @click="$emit('edit-content', 'reserves')">New reserve</button>
+					</div>
+					<div class="reserves-list-container">
+						<template v-for="item in reserves" :key="item.id">
+							<Reserve :reserve="item" :pilots="pilots" />
+							<div v-if="editable" class="briefing-edit-actions">
+								<button type="button" :aria-label="`Edit reserve ${item.name}`" @click="$emit('edit-content', 'reserves', item)">Edit reserve</button>
+							</div>
+						</template>
+					</div>
 				</div>
-			</div>
-		</section>
-	</div>
+			</section>
+			<section id="clocks" class="section-container" :style="{ 'animation-delay': animationDelay }">
+				<div class="section-header clipped-medium-backward">
+					<img src="/icons/protocol.svg" />
+					<h1>Clocks</h1>
+				</div>
+				<div class="section-content-container">
+					<div v-if="editable" class="briefing-edit-actions">
+						<button type="button" @click="$emit('edit-content', 'clocks')">New clock</button>
+					</div>
+					<div class="clocks-list-container">
+						<template v-for="item in clocks" :key="item.id">
+							<Clock :clock="item" :animate="animate" :animation-delay="clockAnimationDelay" />
+							<div v-if="editable" class="briefing-edit-actions">
+								<button type="button" :aria-label="`Edit clock ${item.name}`" @click="$emit('edit-content', 'clocks', item)">Edit clock</button>
+							</div>
+						</template>
+					</div>
+				</div>
+			</section>
+		</div>
 	</div>
 </template>
 
@@ -58,6 +79,7 @@ import Clock from "@/components/Clock.vue";
 import Reserve from "@/components/Reserve.vue";
 
 export default {
+	emits: ["edit-content"],
 	components: {
 		VueMarkdownIt,
 		Mission,
@@ -66,6 +88,8 @@ export default {
 		Reserve,
 	},
 	props: {
+		header: { type: Object, required: true },
+		editable: { type: Boolean, default: false },
 		animate: {
 			type: Boolean,
 			required: true,
@@ -101,30 +125,18 @@ export default {
 			animateView: this.animate,
 			animationDelay: "1.75s",
 			clockAnimationDelay: "2500",
-			missionMarkdown: "",
 		};
 	},
-	computed: {},
+	computed: {
+		selectedMission() {
+			return this.missions.find(mission => mission.slug === this.missionSlug) ?? this.missions[0];
+		},
+	},
 	created() {
 		this.setAnimate();
 		this.setClockAnimateDelay();
 	},
-	beforeUpdate() {
-		// initial set
-		this.selectMission(this.missionSlug);
-	},
-	mounted() {
-		// need to set on re-mount
-		if (this.missions.length > 0) {
-			this.selectMission(this.missions[0].slug);
-		}
-	},
 	methods: {
-		selectMission(slug) {
-			this.missionSlug = slug;
-			let m = this.missions.find(x => x.slug === this.missionSlug);
-			this.missionMarkdown = m.content;
-		},
 		setAnimate() {
 			if (this.animate) {
 				this.animateView = true;

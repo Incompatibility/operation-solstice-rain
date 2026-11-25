@@ -1,11 +1,12 @@
 
 import * as THREE from "three";
+import { publicAssetUrl } from "@/utils/publicAssetUrl.js";
 
 export function createCloudLayer(
   texturePath = "/planets/cressidium-clouds.png"
 ) {
   const texture = new THREE.TextureLoader().load(
-    texturePath
+    publicAssetUrl(texturePath)
   );
 
   texture.colorSpace = THREE.SRGBColorSpace;
