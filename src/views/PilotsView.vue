@@ -104,7 +104,7 @@ export default {
 
 .pilot-sync-actions select {
 	padding: 0.3em;
-	background: #191e20;
+	background: var(--briefing-panel);
 	color: #eee;
 }
 
@@ -128,7 +128,7 @@ export default {
 }
 
 .section-content-container {
-	height: calc(100vh - var(--briefing-header-height));
+	height: var(--briefing-view-height);
 	margin-top: 0;
 	border: 0;
 }

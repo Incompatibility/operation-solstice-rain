@@ -2,7 +2,7 @@
 <template>
   <div ref="container" class="cressidium-globe">
     <video
-      v-if="failed"
+      v-if="failed && bundledPlanet"
       class="fallback-video"
       src="/planet.webm"
       autoplay
@@ -10,6 +10,7 @@
       loop
       playsinline
     ></video>
+    <img v-else-if="failed" class="planet-icon" src="/icons/orbital.svg" alt="" />
   </div>
 </template>
 
@@ -20,7 +21,10 @@ import { createAtmosphere } from "@/utils/createAtmosphere.js";
 import { createCloudLayer } from "@/utils/createCloudLayer.js";
 import { watchPlanetTexture } from "@/utils/watchPlanetTexture.js";
 
-const props = defineProps({ textureUrl: { type: String, required: true } });
+const props = defineProps({
+  textureUrl: { type: String, required: true },
+  bundledPlanet: { type: Boolean, default: false },
+});
 
 const container = ref(null);
 const failed = ref(false);
@@ -83,9 +87,11 @@ onMounted(() => {
     sphere.rotation.y = 0.7;
     sphere.rotation.z = 0.08;
     scene.add(sphere);
-    cloudLayer = createCloudLayer();
-    cloudLayer.rotation.copy(sphere.rotation);
-    scene.add(cloudLayer);
+    if (props.bundledPlanet) {
+      cloudLayer = createCloudLayer();
+      cloudLayer.rotation.copy(sphere.rotation);
+      scene.add(cloudLayer);
+    }
     atmosphere = createAtmosphere(1.10);
     scene.add(atmosphere);
 
@@ -127,8 +133,7 @@ onMounted(() => {
       if (!reduceMotion) {
         sphere.rotation.y +=
           (delta / 30000) * Math.PI * 2;
-        cloudLayer.rotation.y +=
-            (delta / 24000) * Math.PI * 2;
+        if (cloudLayer) cloudLayer.rotation.y += (delta / 24000) * Math.PI * 2;
 
       }
 
@@ -186,5 +191,13 @@ cloudLayer?.userData.cloudTexture?.dispose();
   width: 90px;
   height: 90px;
   object-fit: contain;
+}
+
+.planet-icon {
+  position: absolute;
+  inset: 0;
+  width: 40px;
+  margin: auto;
+  filter: invert(1);
 }
 </style>

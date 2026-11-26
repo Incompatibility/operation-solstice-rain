@@ -1,7 +1,7 @@
 <template>
 	<header>
 		<div class="title clipped-x-large-forward">
-			<img class="logo" src="/faction-logos/union.svg" />
+			<img class="logo" :src="iconUrl" alt="" />
 			<div class="title-container">
 				<div id="title-first-line" class="title-row">
 					<span id="title-header">{{ header.headerTitle }}</span>
@@ -18,11 +18,12 @@
 			<button
 			type="button"
 			class="planet-launch"
-			title="Inspect Cressidium"
-			aria-label="Open Cressidium planetary viewer"
+			:title="planet.name ? `Inspect ${planet.name}` : 'Open planetary viewer'"
+			aria-label="Open planetary viewer"
 			@click="viewerOpen = true"
 			>
-			<PlanetGlobe :texture-url="artwork.planetTexture" />
+			<PlanetGlobe v-if="artwork.planetTexture" :texture-url="artwork.planetTexture" :bundled-planet="artwork.bundledPlanet" />
+			<img v-else class="planet-icon" src="/icons/orbital.svg" alt="" />
 			</button>
 			<div class="location-info">
 				<div id="planet-year" class="location-row">
@@ -54,7 +55,7 @@
 
 		<PlanetViewer
 		v-if="viewerOpen"
-		:briefing="planetBriefing"
+		:planet="planet"
 		:editable="editable"
 		:artwork="artwork"
 		@edit-description="$emit('edit-planet')"
@@ -78,13 +79,10 @@ export default {
   },
 
   props: {
+    iconUrl: { type: String, required: true },
     artwork: { type: Object, required: true },
-    planetBriefing: { type: String, required: true },
+    planet: { type: Object, required: true },
     editable: { type: Boolean, default: false },
-    planetPath: {
-      type: String,
-      required: true
-    },
     header: {
       type: Object,
       required: true
@@ -122,6 +120,12 @@ export default {
 .planet-launch:focus-visible {
   outline: 2px solid var(--primary-color, #ea534c);
   outline-offset: 3px;
+}
+
+.planet-icon {
+  width: 40px;
+  margin: auto;
+  filter: invert(1);
 }
 </style>
 

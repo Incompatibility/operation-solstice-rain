@@ -9,10 +9,10 @@ Use `foundry-v13-dev` for the native module work. The initial target is Foundry 
 - `src/App.vue` loads mission and event Markdown, clocks and reserves JSON, and Comp/Con pilot JSON through Vite's `import.meta.glob`. Campaign settings, POI profiles, and planet locations live in `src/assets/info`. Planet briefing Markdown lives in `src/assets/planet-briefings`. Pilot equipment data comes from the bundled LANCER data packages and `src/assets/LCPs`. `briefing-drafts/` contains working drafts outside the runtime content directories.
 - `public/` contains the raw media copied by Vite, including icons, insignia, portraits, textures, video, and audio. Static Vue and CSS references are rewritten by Vite. Resolve local public paths read from content or assembled at runtime with `src/utils/publicAssetUrl.js`. Bundle the theme fonts through Fontsource.
 - `foundry/module.json` declares the target and `foundry/briefings.mjs` registers the Lancer Briefings button in the Token Controls tools. The button opens a resizable `ApplicationV2` window containing the local build in an iframe. `foundry/briefings.css` styles the window frame. Keep Foundry APIs under `foundry/`.
-- The iframe receives a briefing store from the Foundry host. The store reads the `lancer-briefings.contentEdits` world setting and exposes saving to GMs. Vue merges mission edits by slug and log edits by ID with the bundled Markdown defaults. Deleting an entry saves its ID with a deletion marker so a bundled entry stays removed in that world. The planetary description uses a Markdown override in the same setting. Standalone uses the bundled files. Journal integration is deferred.
+- The iframe receives a briefing store from the Foundry host. The `lancer-briefings.contentEdits` world setting stores the active operation and its archives. The host wraps legacy saved edits as the first operation. Vue merges that operation's edits with its bundled defaults and supplies the resolved briefing when the GM archives it. New operations start with the current pilot roster and their own content. Standalone uses the bundled files. Journal integration is deferred.
 - The Foundry host opens the native image File Picker for GMs. Portrait overrides are saved by POI ID and one surface texture path feeds both globe views. The host resolves selected paths through the current Foundry route. Select files the players can read.
 - The header uses a per-world override. Reserves and clocks merge world edits with bundled entries and entries derived from pilots. Edits to derived entries apply to the briefing and persist independently of the pilot sheet.
-- `foundry/pilot-roster.mjs` publishes briefing fields from linked LANCER actors into the per-world settings. LANCER owns the COMP/CON sharecode import. The active GM updates a linked snapshot when a successful import updates the actor's `last_cloud_update`. Open briefing windows receive the new published roster.
+- `foundry/pilot-roster.mjs` publishes briefing fields from linked LANCER actors into the active operation. LANCER owns the COMP/CON sharecode import. The active GM updates a linked snapshot when a successful import updates the actor's `last_cloud_update`. Archived rosters retain the pilot records from the time of archiving.
 - `vite.config.ts` uses the shared Vue entry for both builds. `foundry/package-module.mjs` copies the manifest, startup script, window stylesheet, and notices alongside the built site in `dist-foundry/lancer-briefings/`. The standalone output is `dist/`. Preserve the repository `LICENSE`, README credits, and bundled asset notices.
 
 ## Development commands
@@ -66,10 +66,19 @@ After rebuilding, repeat the copy command and reload the Foundry client to pick 
 
 Mission visibility updates in open player briefings after saving. Players can reopen the window to pick up changes to event logs. The header subtitle is edited separately under **Edit header**. Visibility applies to the briefing interface. Foundry world settings and bundled Markdown remain readable by clients.
 
+On **POIs**, choose **New POI**, or select a person and choose **Edit POI**. Use **Show to players** to control visibility and **Delete POI** to remove the record after confirmation. Open player briefings update when the GM saves.
+
 ## Edit the header, reserves, and clocks
 
 - On **Status**, choose **Edit header** to update the title, subtitle, and deployment fields.
 - On **Status**, use **New reserve** or **Edit reserve** to manage a reserve. Use **New clock** or **Edit clock** to set the name, description, segment count, filled segments, and color. The edit forms also offer confirmed deletion.
+
+## Switch operations
+
+1. As GM, view the active operation and select **New operation**. Enter its name and optionally its planet, then choose **Start operation**.
+2. The current briefing becomes a read-only archive. The active briefing starts with the current pilot roster, and linked pilots continue to receive COMP/CON updates in the active operation.
+3. Choose any archive or the active briefing from the **Operation** dropdown. The selection is local to each briefing window.
+4. To resume an archive, view the active operation as GM, select **Switch active**, choose an operation, and select **Switch operation**. The selected briefing becomes active with its saved pilot roster and the previous one is archived.
 
 ## Link pilots from COMP/CON
 

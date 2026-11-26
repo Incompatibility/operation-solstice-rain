@@ -15,10 +15,14 @@ try {
 		color: 0x694f5d,
 		color2: 0x68a691,
 		backgroundColor: 0x0c090d,
+		backgroundAlpha: 0,
 		size: 2,
 		sphereRotation: -0.002,
 		meshRotation: 0.004,
 	});
 } catch (error) {
 	console.warn("Animated briefing background unavailable:", error);
+} finally {
+	// Vanta sets an inline fallback color when WebGL is unavailable.
+	document.body.style.removeProperty("background");
 }

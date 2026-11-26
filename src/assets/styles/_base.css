@@ -17,9 +17,11 @@
   /* Union Navy Theme */
   --primary-color: #EA534C;
   --secondary-color: #161c1dcc;
+  --briefing-background: #0c090d;
+  --briefing-panel: #191e20;
 
-  --highlight-hover: rgba(234, 83, 76, 0.30);
-  --highlight-active: rgba(234, 83, 76, 0.15);
+  --highlight-hover: color-mix(in srgb, var(--primary-color) 30%, transparent);
+  --highlight-active: color-mix(in srgb, var(--primary-color) 15%, transparent);
 
   /* Text */
   --text-headers: rgba(0, 0, 0, 1);
@@ -51,14 +53,42 @@
   --text-markdown-h2: rgba(255, 255, 255, 0.87);
 }
 
+:root[data-briefing-theme="cobalt"] {
+  --primary-color: #72aaff;
+  --secondary-color: #132038e6;
+  --briefing-background: #090e1b;
+  --briefing-panel: #172338;
+  --briefing-background-filter: hue-rotate(230deg);
+}
+
+:root[data-briefing-theme="emerald"] {
+  --primary-color: #59d6a4;
+  --secondary-color: #112921e6;
+  --briefing-background: #071510;
+  --briefing-panel: #142821;
+  --briefing-background-filter: hue-rotate(150deg);
+}
+
+:root[data-briefing-theme="amber"] {
+  --primary-color: #efb454;
+  --secondary-color: #2a2116e6;
+  --briefing-background: #171006;
+  --briefing-panel: #2b2118;
+  --briefing-background-filter: hue-rotate(48deg);
+}
 
 html {
 	overflow: overlay;
 }
 
+body {
+	background-color: var(--briefing-background);
+}
+
 .vanta-canvas {
 	max-width: 100%;
 	max-height: 100%;
+	filter: var(--briefing-background-filter, none);
 }
 
 /* Scroll bar stylings */
@@ -158,6 +188,7 @@ header {
 	width: 50px;
 	height: 80px;
 	margin-left: 15px;
+	object-fit: contain;
 }
 
 .title-row {
@@ -339,14 +370,20 @@ div.location-info {
 
 div#router-view-container {
 	--briefing-header-height: 95px;
+	--operation-toolbar-height: 0px;
+	--briefing-view-height: calc(100vh - var(--briefing-header-height) - var(--operation-toolbar-height));
 	position: absolute;
 	top: var(--briefing-header-height);
 	left: 90px;
 	right: 0;
 }
 
+#router-view-container.has-operations {
+	--operation-toolbar-height: 3rem;
+}
+
 .content-container {
-	--view-height: calc(100vh - var(--briefing-header-height));
+	--view-height: var(--briefing-view-height);
 	--view-padding-block: clamp(12px, 4vh, 50px);
 	--panel-gap: clamp(12px, 3vw, 60px);
 	--panel-height: max(16rem, calc(var(--view-height) - 2 * var(--view-padding-block)));
@@ -405,7 +442,7 @@ div#router-view-container {
 .briefing-edit-actions button {
 	padding: 0.25rem 0.65rem;
 	border: 1px solid var(--primary-color);
-	background: #191e20;
+	background: var(--briefing-panel);
 	color: #eee;
 	cursor: pointer;
 }
@@ -419,6 +456,30 @@ div#router-view-container {
 .briefing-edit-actions button:disabled {
 	opacity: 0.65;
 	cursor: default;
+}
+
+.operation-toolbar {
+	flex-wrap: nowrap;
+	align-items: center;
+	height: var(--operation-toolbar-height);
+	padding: 0.35rem clamp(12px, 2vw, 30px);
+	border-bottom: 1px solid var(--primary-color);
+	background: var(--briefing-panel);
+	color: var(--text-location);
+}
+
+.operation-toolbar select {
+	width: min(24rem, 100%);
+	min-width: 0;
+	padding: 0.25rem 0.5rem;
+	border: 1px solid var(--primary-color);
+	background: var(--briefing-background);
+	color: inherit;
+	color-scheme: dark;
+}
+
+.operation-toolbar button {
+	flex-shrink: 0;
 }
 
 .briefing-action-error {

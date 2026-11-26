@@ -6,6 +6,13 @@ export function watchPlanetTexture(url, material, { onStart, onLoad, onError }) 
 	const stop = watch(url, (path, _previous, onCleanup) => {
 		let active = true;
 		onStart?.();
+		if (!path) {
+			material.map?.dispose();
+			material.map = null;
+			material.needsUpdate = true;
+			onLoad();
+			return;
+		}
 		const pending = loader.load(path, texture => {
 			if (!active) return;
 			material.map?.dispose();

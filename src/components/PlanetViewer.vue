@@ -5,14 +5,14 @@
         class="orbital-panel"
         role="dialog"
         aria-modal="true"
-        aria-label="Cressidium planetary viewer"
+        aria-label="Planetary viewer"
       >
         <div class="orbital-header">
           <div>
             <span class="eyebrow">
               UNION NAVAL COMMAND // ORBITAL SURVEY
             </span>
-            <h1>CRESSIDIUM</h1>
+            <h1>{{ props.planet.name || "Planetary viewer" }}</h1>
           </div>
 
           <div class="orbital-actions">
@@ -54,9 +54,11 @@
     <section class="briefing-panel">
       <div class="briefing-content">
         <VueMarkdownIt
-          :source="briefing"
+          v-if="props.planet.briefing"
+          :source="props.planet.briefing"
           class="planet-markdown"
         />
+        <p v-else class="briefing-empty">No planetary description available.</p>
       </div>
     </section>
 
@@ -65,18 +67,25 @@
   <aside class="orbital-data">
             <h2>PLANETARY DATA</h2>
 
-            <p class="data-label">DESIGNATION</p>
-            <p>CRESSIDIUM</p>
+            <template v-if="props.planet.name">
+              <p class="data-label">DESIGNATION</p>
+              <p>{{ props.planet.name }}</p>
+            </template>
 
-            <p class="data-label">SYSTEM</p>
-            <p>CRESSIDIUM</p>
+            <template v-if="props.planet.system">
+              <p class="data-label">SYSTEM</p>
+              <p>{{ props.planet.system }}</p>
+            </template>
 
-            <p class="data-label">ACTIVE OPERATION</p>
-            <p>SOLSTICE RAIN</p>
+            <p class="data-label">OPERATION</p>
+            <p>{{ props.planet.operation }}</p>
 
-            <p class="data-label">AREA OF OPERATIONS</p>
-            <p>NOV ELYSIA</p>
+            <template v-if="props.planet.area">
+              <p class="data-label">AREA OF OPERATIONS</p>
+              <p>{{ props.planet.area }}</p>
+            </template>
 
+            <template v-if="locations.length">
             <hr />
 
             <h2>LOCATION REGISTRY</h2>
@@ -119,6 +128,7 @@
               </p>
             </div>
 
+            </template>
 
             <hr />
 
@@ -139,7 +149,7 @@
         </div>
 
         <footer class="orbital-footer">
-          UNS-CV RIO GRANDE // ORBITAL OBSERVATION SYSTEM
+          {{ props.planet.ship ? `${props.planet.ship} // ` : "" }}ORBITAL OBSERVATION SYSTEM
         </footer>
       </section>
     </div>
@@ -153,10 +163,9 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createAtmosphere } from "@/utils/createAtmosphere.js";
 import { createCloudLayer } from "@/utils/createCloudLayer.js";
 import { watchPlanetTexture } from "@/utils/watchPlanetTexture.js";
-import locations from "@/assets/info/planet-locations.json";
 import { VueMarkdownIt } from "@f3ve/vue-markdown-it";
 const props = defineProps({
-  briefing: { type: String, required: true },
+  planet: { type: Object, required: true },
   editable: { type: Boolean, default: false },
   artwork: { type: Object, required: true },
 });
@@ -167,6 +176,7 @@ const closeButton = ref(null);
 const loading = ref(true);
 const error = ref("");
 const rotationPaused = ref(false);
+const locations = props.planet.locations;
 const selectedLocation = ref(locations[0] ?? null);
 
 const raycaster = new THREE.Raycaster();
@@ -423,7 +433,7 @@ function onGlobePointerUp(event) {
       surfaceHit.uv.x * 360 - 180
     ).toFixed(2);
 
-    console.log("CRESSIDIUM LOCATION:", {
+    console.log("Planetary location:", {
       latitude: Number(latitude),
       longitude: Number(longitude)
     });
@@ -515,9 +525,11 @@ onMounted(() => {
     createMarkers();
 
 
-    cloudLayer = createCloudLayer();
-    cloudLayer.rotation.copy(planet.rotation);
-    scene.add(cloudLayer);
+    if (props.artwork.bundledPlanet) {
+      cloudLayer = createCloudLayer();
+      cloudLayer.rotation.copy(planet.rotation);
+      scene.add(cloudLayer);
+    }
 
     atmosphere = createAtmosphere(1.10);
     scene.add(atmosphere);
@@ -605,6 +617,9 @@ onBeforeUnmount(() => {
 
   atmosphere?.geometry.dispose();
   atmosphere?.material.dispose();
+  cloudLayer?.geometry.dispose();
+  cloudLayer?.material.dispose();
+  cloudLayer?.userData.cloudTexture?.dispose();
 
   geometry?.dispose();
   stopWatchingTexture?.();
@@ -801,12 +816,12 @@ onBeforeUnmount(() => {
 }
 
 .location-button:hover {
-  border-color: #ea534c;
+  border-color: var(--primary-color);
 }
 
 .location-button.active {
-  background: #422828;
-  border-color: #ea534c;
+  background: color-mix(in srgb, var(--primary-color) 20%, var(--briefing-panel));
+  border-color: var(--primary-color);
   color: white;
 }
 
@@ -816,12 +831,12 @@ onBeforeUnmount(() => {
 }
 
 .location-indicator {
-  color: #ea534c;
+  color: var(--primary-color);
   margin-right: 8px;
 }
 
 .location-detail {
-  border-top: 1px solid #ea534c;
+  border-top: 1px solid var(--primary-color);
   padding-top: 12px;
   line-height: 1.6;
 }
@@ -835,7 +850,7 @@ onBeforeUnmount(() => {
 }
 
 .location-type {
-  color: #ea534c;
+  color: var(--primary-color);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -869,7 +884,7 @@ onBeforeUnmount(() => {
 }
 
 .rotation-toggle:hover {
-  background: #422828;
+  background: color-mix(in srgb, var(--primary-color) 20%, var(--briefing-panel));
 }
 
 .rotation-toggle:focus-visible {
@@ -976,7 +991,7 @@ onBeforeUnmount(() => {
   margin: 18px 0;
   padding: 12px 16px;
   border-left: 3px solid var(--primary-color, #ea534c);
-  background: rgba(234, 83, 76, 0.08);
+  background: color-mix(in srgb, var(--primary-color) 8%, transparent);
 }
 
 

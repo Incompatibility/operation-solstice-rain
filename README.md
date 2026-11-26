@@ -73,7 +73,8 @@ This folder holds all of the local image, audio and video assets.
   - `initialSlug` - Controls what mission file is selected on startup. This MUST match the slug of a markdown file within the `/public/missions/` directory.
   - `planetPath` - The path (relative to the root directory of this repository) to the .webm or .gif file to use for the planet video element.
   - `defaultTitle` - Sets the prefix for the title of each page (the text that shows up in your browser tab).
-  - `icon` - The path (relative to the root directory of this repository) to the image that should be used for the favicon. This will be displayed in the browser tab for this website.
+  - `icon` - The public asset path for the default header icon and browser favicon.
+  - `theme` - The default briefing color theme. Use `union`, `cobalt`, `emerald`, or `amber`.
   - `header` - Reads from the `header` JSON object to determine what text to place on each element of the `Header.vue` Component.
 
 ### /src/components/pilot.vue
@@ -97,6 +98,8 @@ The native module targets Foundry VTT 13.351 with LANCER 3.1.3. Build it with `n
 
 GMs can add, edit, and delete missions and logs, choose which logs appear in the player briefing, and edit the planetary description from the Cressidium viewer. Saves belong to the active world. Players see the latest visible content when they open the briefing.
 
-Use **Change portrait** in **POIs** or **Change globe texture** in the planetary viewer to pick images through Foundry’s File Picker.
+On **POIs**, GMs can use **New POI** and **Edit POI** to manage personnel records. Clear **Show to players** to hide a record, or select **Delete POI** and confirm removal. Use **Change portrait** on a saved record or **Change globe texture** in the planetary viewer to pick images through Foundry’s File Picker.
 
-On **Status**, GMs can edit the header, reserves, and clocks. On **Pilots**, link a LANCER pilot actor to publish its briefing details and pick up later COMP/CON imports from its **RM-4://SYNC** tab.
+On **Status → Edit header**, GMs can pick a **Header icon** with Foundry’s File Picker and preview a **Color theme** in the dropdown. **Save to world** applies both choices to the active world. GMs can also edit reserves and clocks on **Status**. On **Pilots**, link a LANCER pilot actor to publish its briefing details and pick up later COMP/CON imports from its **RM-4://SYNC** tab.
+
+Use the **Operation** dropdown to browse the active briefing or an archive. **New operation** archives the current briefing and starts a fresh one with the current pilot roster. To resume a saved operation, open the active briefing and select **Switch active**. The selected operation becomes editable again with its saved roster, and the previous operation becomes read-only.

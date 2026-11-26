@@ -3,6 +3,7 @@ import { snapshotPilot } from "./pilot-roster.mjs";
 const MODULE_ID = "lancer-briefings";
 const TITLE = "Lancer Briefings";
 const CONTENT_SETTING = "contentEdits";
+const FIRST_OPERATION_ID = "solstice-rain";
 const briefingUrl = new URL("./index.html", import.meta.url);
 const { ApplicationV2 } = foundry.applications.api;
 const { FilePicker } = foundry.applications.apps;
@@ -16,29 +17,36 @@ Hooks.once("init", () => {
 		onChange: value => {
 			const frame = briefing?.rendered && briefing.element.querySelector("iframe");
 			if (!frame?.briefingStore?.notifyChanges) return;
-			const changes = {
-				pilotRoster: value?.pilotRoster ?? [],
-				removedBundledPilots: value?.removedBundledPilots ?? [],
-			};
-			if (!game.user.isGM) changes.missions = playerMissions(value?.missions ?? []);
-			frame.briefingStore.notifyChanges(foundry.utils.deepClone(changes));
+			frame.briefingStore.notifyChanges(briefingState(value));
 		},
 	});
 });
 
-function readEdits() {
-	return foundry.utils.deepClone(game.settings.get(MODULE_ID, CONTENT_SETTING));
+function worldState(value = game.settings.get(MODULE_ID, CONTENT_SETTING)) {
+	const stored = foundry.utils.deepClone(value);
+	if (stored.operations) return stored;
+	return {
+		activeOperationId: FIRST_OPERATION_ID,
+		operations: [{ id: FIRST_OPERATION_ID, bundled: true, content: stored }],
+	};
 }
 
-function playerMissions(missions) {
-	return missions.map(entry => entry.hidden ? { slug: entry.slug, hidden: true } : entry);
+function playerEntries(entries, key = "id") {
+	return entries.map(entry => entry.hidden ? { [key]: entry[key], hidden: true } : entry);
 }
 
-function readPlayerEdits() {
-	const edits = readEdits();
-	edits.missions = playerMissions(edits.missions);
-	edits.events = edits.events.map(entry => entry.hidden ? { id: entry.id, hidden: true } : entry);
-	return edits;
+function briefingState(value) {
+	const state = worldState(value);
+	if (!game.user.isGM) {
+		for (const operation of state.operations) {
+			const { content } = operation;
+			content.missions = playerEntries(content.missions ?? [], "slug");
+			content.events = playerEntries(content.events ?? []);
+			content.pois = playerEntries(content.pois ?? []);
+			delete operation.resume;
+		}
+	}
+	return state;
 }
 
 function checkPrevious(current, previous) {
@@ -49,16 +57,55 @@ function checkPrevious(current, previous) {
 
 let pendingSave = Promise.resolve();
 
-function saveEntry(collection, draft, previous) {
-	const save = pendingSave.then(() => commitEntry(collection, draft, previous));
+function saveEntry(collection, draft, previous, operationId) {
+	const save = pendingSave.then(() => commitEntry(collection, draft, previous, operationId));
 	pendingSave = save.catch(() => {});
 	return save;
 }
 
-async function commitEntry(collection, draft, previous) {
+async function commitEntry(collection, draft, previous, operationId) {
 	if (!game.user.isGM) throw new Error("Only a GM can save briefing content.");
-	const edits = readEdits();
-	if (collection === "planet") {
+	const state = worldState();
+	if (operationId !== state.activeOperationId) {
+		if (collection === "pilotRoster" && draft.refreshOnly) return state;
+		throw new Error("The active operation changed. Reopen the editor to make your changes in the new operation.");
+	}
+	const operation = state.operations.find(entry => entry.id === operationId);
+	const edits = operation.content;
+	if (collection === "operation" || collection === "switchOperation") {
+		checkPrevious(edits, previous);
+		let next;
+		if (collection === "switchOperation") {
+			next = state.operations.find(entry => entry.id === draft.targetId);
+			if (!next?.archivedAt || next.archivedAt !== draft.archivedAt) {
+				throw new Error("The selected archive changed. Reopen Switch active and choose an operation again.");
+			}
+			next.content = draft.restored;
+			delete next.archivedAt;
+			delete next.resume;
+		} else {
+			const name = draft.name.trim();
+			if (!name) throw new Error("Enter a name for the operation.");
+			const { headerTitle, headerSubtitle, icon, theme } = draft.snapshot.header;
+			next = {
+				id: foundry.utils.randomID(),
+				name,
+				content: {
+					header: { headerTitle, headerSubtitle, icon, theme, subheaderTitle: name, planet: draft.planet },
+					pilotRoster: edits.pilotRoster ?? [],
+					removedBundledPilots: edits.removedBundledPilots ?? [],
+					bundledPilots: draft.resume.bundledPilots,
+				},
+			};
+		}
+		operation.content = draft.snapshot;
+		operation.name = draft.archiveName;
+		operation.bundled = false;
+		operation.archivedAt = new Date().toISOString();
+		operation.resume = draft.resume;
+		state.operations = [next, ...state.operations.filter(entry => entry.id !== next.id)];
+		state.activeOperationId = next.id;
+	} else if (collection === "planet") {
 		checkPrevious(edits.planetBriefing, previous);
 		edits.planetBriefing = draft.content;
 	} else if (collection === "header") {
@@ -73,9 +120,9 @@ async function commitEntry(collection, draft, previous) {
 				const callsign = previousLink?.replaces ?? draft.callsign.toUpperCase();
 				edits.removedBundledPilots = [...new Set([...(edits.removedBundledPilots ?? []), callsign])];
 			}
-			return saveWorldEdits(edits);
+			return saveWorldState(state);
 		}
-		if (draft.refreshOnly && !previousLink) return edits;
+		if (draft.refreshOnly && !previousLink) return state;
 		const actor = game.actors.get(draft.actorId);
 		if (actor?.type !== "pilot") throw new Error("Select a LANCER pilot actor.");
 		const pilot = snapshotPilot(actor);
@@ -86,6 +133,9 @@ async function commitEntry(collection, draft, previous) {
 			: [...links, link];
 	} else if (collection === "artwork") {
 		if (draft.poiId) {
+			if (edits.pois?.some(entry => entry.id === draft.poiId && entry.deleted)) {
+				throw new Error("This POI was deleted while the File Picker was open.");
+			}
 			const portraits = edits.poiPortraits ?? {};
 			checkPrevious(Object.hasOwn(portraits, draft.poiId) ? portraits[draft.poiId] : null, previous);
 			edits.poiPortraits = { ...portraits, [draft.poiId]: draft.path };
@@ -95,7 +145,7 @@ async function commitEntry(collection, draft, previous) {
 			edits.planetTexture = draft.path;
 		}
 	} else {
-		if (!["missions", "events", "clocks", "reserves"].includes(collection)) throw new Error("Unknown briefing section.");
+		if (!["missions", "events", "clocks", "reserves", "pois"].includes(collection)) throw new Error("Unknown briefing section.");
 		const key = collection === "missions" ? "slug" : "id";
 		const entry = key === "id" && !draft.id
 			? { ...draft, id: foundry.utils.randomID() }
@@ -105,14 +155,15 @@ async function commitEntry(collection, draft, previous) {
 		checkPrevious(entries[index], previous);
 		if (index === -1) entries.unshift(entry);
 		else entries[index] = entry;
+		if (collection === "pois" && entry.deleted && edits.poiPortraits) delete edits.poiPortraits[entry.id];
 	}
 
-	return saveWorldEdits(edits);
+	return saveWorldState(state);
 }
 
-async function saveWorldEdits(edits) {
+async function saveWorldState(state) {
 	try {
-		return await game.settings.set(MODULE_ID, CONTENT_SETTING, edits);
+		return await game.settings.set(MODULE_ID, CONTENT_SETTING, state);
 	} catch (error) {
 		console.error(`${TITLE} could not save world content.`, error);
 		throw new Error("Foundry could not save the change. Please try again.");
@@ -138,8 +189,11 @@ function openPilotSheet(id) {
 Hooks.on("updateActor", (actor, changes) => {
 	if (actor.type !== "pilot" || game.users.activeGM?.id !== game.user.id) return;
 	if (!foundry.utils.getProperty(changes, "system.last_cloud_update") && !changes["system.last_cloud_update"]) return;
-	if (!readEdits().pilotRoster?.some(link => link.actorId === actor.id)) return;
-	saveEntry("pilotRoster", { actorId: actor.id, refreshOnly: true }).catch(error => ui.notifications.error(error.message));
+	const { activeOperationId, operations } = worldState();
+	const active = operations.find(operation => operation.id === activeOperationId);
+	if (!active.content.pilotRoster?.some(link => link.actorId === actor.id)) return;
+	saveEntry("pilotRoster", { actorId: actor.id, refreshOnly: true }, null, activeOperationId)
+		.catch(error => ui.notifications.error(error.message));
 });
 
 function pickImage(current) {
@@ -167,8 +221,8 @@ class BriefingsWindow extends ApplicationV2 {
 		frame.title = TITLE;
 		frame.allow = "autoplay";
 		frame.briefingStore = game.user.isGM
-			? { read: readEdits, save: saveEntry, pickImage, imageUrl, listPilots, openPilotSheet }
-			: { read: readPlayerEdits, imageUrl };
+			? { read: briefingState, save: saveEntry, pickImage, imageUrl, listPilots, openPilotSheet }
+			: { read: briefingState, imageUrl };
 		frame.src = briefingUrl.href;
 		return frame;
 	}

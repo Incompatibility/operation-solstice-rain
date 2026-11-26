@@ -4,6 +4,7 @@
   "animate": true,
   "defaultTitle": "UNION NAVY |",
   "icon": "/faction-logos/union.svg",
+  "theme": "union",
   "header": {
     "planet": "Cressidium",
     "year": "5016u",

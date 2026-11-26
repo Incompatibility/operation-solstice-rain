@@ -9,12 +9,17 @@
       </div>
 
       <div class="poi-panel-body">
+        <div v-if="editable" class="briefing-edit-actions poi-directory-actions">
+          <button type="button" @click="$emit('edit-content', 'pois')">New POI</button>
+        </div>
+        <p v-if="persons.length === 0" class="briefing-empty">No POIs available.</p>
         <button
           v-for="person in persons"
           :key="person.id"
           type="button"
           class="poi-entry"
-          :class="{ selected: selectedId === person.id }"
+          :class="{ selected: selectedPerson.id === person.id }"
+          :aria-pressed="selectedPerson.id === person.id"
           @click="selectedId = person.id"
         >
           <span class="poi-category">
@@ -28,6 +33,7 @@
           <span class="poi-subtitle">
             {{ person.role }}
           </span>
+          <span v-if="person.hidden" class="briefing-visibility">Hidden from players</span>
         </button>
       </div>
     </section>
@@ -63,27 +69,30 @@
               {{ selectedPerson.pronouns }}
             </p>
 
-            <div v-if="artwork?.editable" class="briefing-edit-actions poi-artwork-actions">
-              <button type="button" :disabled="artwork.busy" @click="artwork.change(selectedPerson.id)">Change portrait</button>
-              <button v-if="artwork.portraits[selectedPerson.id]" type="button" :disabled="artwork.busy"
-                @click="artwork.change(selectedPerson.id, true)">Use default portrait</button>
-              <p v-if="artwork.error?.poiId === selectedPerson.id" class="briefing-action-error" role="alert">
-                {{ artwork.error.message }}
-              </p>
+            <div v-if="editable" class="briefing-edit-actions poi-record-actions">
+              <button type="button" @click="$emit('edit-content', 'pois', selectedPerson)">Edit POI</button>
+              <template v-if="artwork?.editable">
+                <button type="button" :disabled="artwork.busy" @click="artwork.change(selectedPerson.id)">Change portrait</button>
+                <button v-if="artwork.portraits[selectedPerson.id]" type="button" :disabled="artwork.busy"
+                  @click="artwork.change(selectedPerson.id, true)">Use default portrait</button>
+                <p v-if="artwork.error?.poiId === selectedPerson.id" class="briefing-action-error" role="alert">
+                  {{ artwork.error.message }}
+                </p>
+              </template>
             </div>
 
             <div class="poi-fields">
-              <p>
+              <p v-if="selectedPerson.affiliation">
                 <strong>AFFILIATION:</strong>
                 {{ selectedPerson.affiliation }}
               </p>
 
-              <p>
+              <p v-if="selectedPerson.assignment">
                 <strong>ASSIGNMENT:</strong>
                 {{ selectedPerson.assignment }}
               </p>
 
-              <p>
+              <p v-if="selectedPerson.role">
                 <strong>ROLE:</strong>
                 {{ selectedPerson.role }}
               </p>
@@ -91,11 +100,13 @@
           </div>
         </div>
 
-        <div class="poi-biography">
-          <h3>PERSONNEL OVERVIEW</h3>
-          <p>{{ selectedPerson.summary }}</p>
+        <div v-if="selectedPerson.summary || selectedPerson.details?.length" class="poi-biography">
+          <template v-if="selectedPerson.summary">
+            <h3>PERSONNEL OVERVIEW</h3>
+            <p>{{ selectedPerson.summary }}</p>
+          </template>
 
-          <h3>BACKGROUND</h3>
+          <h3 v-if="selectedPerson.details?.length">BACKGROUND</h3>
           <p
             v-for="(paragraph, index) in selectedPerson.details"
             :key="index"
@@ -109,39 +120,39 @@
 </template>
 
 <script>
-import persons from "@/assets/info/poi-profiles.json";
 import { publicAssetUrl } from "@/utils/publicAssetUrl.js";
+
+const fallbackPortrait = "/icons/npc.svg";
 
 export default {
   name: "PersonsView",
+  emits: ["edit-content"],
   props: {
+    persons: { type: Array, required: true },
+    editable: { type: Boolean, default: false },
     artwork: { type: Object, default: null },
   },
 
   data() {
     return {
-      persons,
-      selectedId: persons[0]?.id ?? null
+      selectedId: null
     };
   },
 
   computed: {
     selectedPerson() {
-      return this.persons.find(
-        person => person.id === this.selectedId
-      );
+      return this.persons.find(person => person.id === this.selectedId) ?? this.persons[0];
     },
     selectedPortrait() {
-      return this.artwork?.portraits[this.selectedId] ?? publicAssetUrl(this.selectedPerson?.portrait);
+      return this.artwork?.portraits[this.selectedPerson.id]
+        ?? publicAssetUrl(this.selectedPerson.portrait || fallbackPortrait);
     }
   },
 
   methods: {
     onImageError(event) {
-      const fallback = "/icons/npc.svg";
-
-      if (!event.target.src.endsWith(fallback)) {
-        event.target.src = publicAssetUrl(fallback);
+      if (!event.target.src.endsWith(fallbackPortrait)) {
+        event.target.src = publicAssetUrl(fallbackPortrait);
       }
     }
   }
@@ -155,7 +166,7 @@ export default {
   gap: 25px;
   width: calc(100vw - 155px);
   max-width: 1600px;
-  height: calc(100vh - 155px);
+  height: calc(var(--briefing-view-height) - 60px);
   margin: 30px;
   color: white;
 }
@@ -189,7 +200,7 @@ export default {
 .poi-entry:hover,
 .poi-entry.selected {
   border-color: var(--primary-color);
-  background: #3a2929;
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--briefing-panel));
 }
 
 .poi-entry strong {
@@ -240,8 +251,17 @@ export default {
   line-height: 1.9;
 }
 
-.poi-artwork-actions {
+.poi-directory-actions {
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+.poi-record-actions {
   padding-left: 0;
+}
+
+.poi-entry .briefing-visibility {
+  display: block;
 }
 
 .poi-fields strong {
