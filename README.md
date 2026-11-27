@@ -2,7 +2,7 @@
 
 # Lancer Briefings
 
-**[Live Demo](https://lancer.kuenaimaku.com/)**
+**[Live Demo](operation-solstice-rain.netlify.app/status)**
 
 Go over mission briefings within the LANCER Universe in style by showing your players a fully animated mission briefing screen, with a Mirrorsmoke Mercenary Company theme.
 
@@ -10,8 +10,10 @@ Go over mission briefings within the LANCER Universe in style by showing your pl
 
 - Alkyama#2737 (discord) for the original [Figma Template](figma.com/community/file/983540597915480981) used as reference.
 - [VantaJS](https://www.vantajs.com/) for the slick 3d openGL backgrounds.
+- https://github.com/Kuenaimaku/lancer-briefings for the original github
+- https://orogen.studio/ for the generated planets
 
-## Requirements
+## Requirements (everything below this is from Kuenaimaku's repo)
 
 - Node (v14+)
 - Light Text Editor (VSCode Recommended)
